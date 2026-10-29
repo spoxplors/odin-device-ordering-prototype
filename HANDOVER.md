@@ -1,6 +1,6 @@
 # Handover — Odin device ordering POC
 
-Last updated: 28 October 2026
+Last updated: 29 October 2026
 
 Picking this up fresh: read this file top to bottom first. *Decisions already
 made* and *Gotchas worth knowing* are the two sections that will save you
@@ -9,7 +9,7 @@ covers the same ground in more detail for the Devices page and the flow.
 
 ## Where this stands
 
-Three things exist and work:
+Four things exist and work:
 
 1. **The Odin Devices list page** (`devices.html`) — a static replica of the live
    portal page, styled in Odin green.
@@ -19,6 +19,9 @@ Three things exist and work:
    pages: see *Phases are a setting* below.
 3. **`index.html`** — the way in, listing the three phases and opening
    Phase 1 or Phase 2.
+4. **A published copy.** The whole prototype is on GitHub Pages at
+   <https://spoxplors.github.io/odin-device-ordering-prototype/> so the link can
+   be shared with colleagues. Read *Publishing* below before pushing anything.
 
 The flow renders **inside the Odin content area**, not as a full page: every
 screen draws the Odin app bar and sidebar and puts its own content straight onto
@@ -30,6 +33,28 @@ so the *Decisions* section is where their instructions are recorded — read it
 before changing anything there.
 
 Most recent round of changes, in order:
+
+- **The prototype was published** — a public GitHub repo and a GitHub Pages
+  site. See *Publishing* below; it changes what may go into a commit.
+- `prototype-start.html` became **`index.html`**, and what was `index.html` —
+  the Odin Devices page — became **`devices.html`**. Pages serves `index.html`
+  at the site root and the user chose the starter page as the landing page.
+  Every link, the nav entry in `js/shell.js` and the comments in `js/order.js`
+  and `js/prototype-bar.js` moved with them
+- **the prototype settings bar went onto every page except the starter page**,
+  `devices.html` included — see the bullet in *Decisions* for the script
+  collision that caused, which is the one trap in this round
+- **the *Available to order* badge stopped being a pill** and took the Atlas
+  Badge component's 4px radius. Every other badge stays a pill, deliberately
+- **the gap under every page head halved** to one `--space-gap-section` (32px).
+  The user asked for it on checkout first, then for all pages
+- the catalogue's card image boxes came down from 320px to **250px**
+  (`.atlas .device-card__media`), and the device detail page's hero box from
+  560px to **450px** (`.atlas .detail__media`)
+- the order summary gained a *Back to orders* link, as must any summary page
+  added later
+
+The round before that:
 
 - **Phase 2 was built**: real totals in place of the beta discount, a payment
   section on checkout (card or next month's payout), a government-entity branch
@@ -106,8 +131,59 @@ under *Keeping the two systems apart*. If you add a component whose class name
 exists in both systems, check it the same way: disable `styles.css` in devtools
 and diff the computed styles. Anything that changes was coming from Odin.
 
+## Publishing — this repo is public
+
+| | |
+|---|---|
+| Repo | <https://github.com/spoxplors/odin-device-ordering-prototype> |
+| Live site | <https://spoxplors.github.io/odin-device-ordering-prototype/> |
+| Pages source | `main`, root folder, legacy deploy-from-branch — no Actions workflow |
+
+Pushing to `main` redeploys. The build takes well under a minute.
+
+```bash
+git add -A && git commit -m "…" && git push
+```
+
+**Public means public.** A Pages site is reachable by anyone with the link and
+is indexable; there is no internal-only setting, and a free account cannot
+serve Pages from a private repo at all. The user was told this and chose public
+with the sensitive material withheld. So, before every push:
+
+- **No Figma file keys, library keys or internal URLs.** The three Figma
+  identifiers were redacted out of this file and out of the header comment in
+  `css/atlas.css` when the repo went up — see *Reference*. Do not put them back.
+- **No real merchant, cardholder, payment or personal data.** That was already
+  the rule (*Data and content* below); publication gives it a public blast
+  radius. The personal email address in the supplied checkout mockup stayed out
+  for this reason among others.
+- `assets/odin-devices-current.png` — a reference screenshot of the live Odin
+  portal, used by no page — is **gitignored**. Keep it that way.
+- `.DS_Store` is gitignored, at the root and anywhere below it.
+
+`.nojekyll` at the root stops Pages running the files through Jekyll, which
+would otherwise drop anything whose name begins with an underscore.
+
+**Pages serves from Linux, which is case-sensitive; macOS is not.** A reference
+to `assets/Devices/…` works locally and 404s on the live site. Every asset was
+checked at publish time and all returned 200 — check again on the live URL, not
+localhost, whenever you add files.
+
+Taking it down: deleting the repo stops the link working immediately, though
+anything already crawled may persist in caches for a while.
+
 ## Decisions already made — do not relitigate without asking
 
+- **`index.html` is the starter page; `devices.html` is the Devices list.**
+  They were the other way round until publication: Pages serves `index.html` at
+  the site root and the user picked the starter page as the landing page.
+  Swapping them back would change the public URL and break any link already
+  shared.
+- **One section gap under every page head.** `.atlas .page__head` carries
+  `--space-gap-section` (32px), half what it was. The user asked for it on
+  checkout, was told the rule is shared by five pages, and asked for all of
+  them — so a `page__head--tight` modifier existed for one turn and was then
+  removed. Editing that rule now moves every page, which is the intent.
 - **Phases are a setting, not separate pages.** Phase 1 and Phase 2 are the
   same five screens. `state.phase` decides which behaviour is live: 1 keeps the
   100% beta discount and shows no payment step, 2 charges a real total. It is
@@ -438,8 +514,15 @@ And as before:
   component you suspect against `.card`, which is known clean: anything
   differing *beyond* that shared set is real leakage.
 
+After a push, verify on the **live site** as well as localhost. Case-sensitive
+paths and files left out of the commit only fail there: load each page and
+check the network panel for anything that is not 200.
+
 Cart and orders live in `localStorage` under `odin.deviceOrdering.v1`. Clear it
-to start from an empty state.
+to start from an empty state. It is per-origin, so an order placed on one port
+is invisible on another — if a test order seems to have vanished, check the
+port before chasing the bug. Everyone opening the live site gets their own
+`localStorage`, so no reviewer can see another's test orders.
 
 ## Reference
 
@@ -450,3 +533,5 @@ is public. Ask the design team, or read them from the Figma files directly.
 - Atlas Figma: file `withheld from this repo`, Foundations page `5:2`
 - Atlas library key: `withheld from this repo`
 - Flow diagram: Miro board linked at the top of `user-flows/flow.md`
+- Repo: <https://github.com/spoxplors/odin-device-ordering-prototype>
+- Live site: <https://spoxplors.github.io/odin-device-ordering-prototype/>
