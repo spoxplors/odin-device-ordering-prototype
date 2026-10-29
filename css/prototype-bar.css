@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Prototype settings bar.
+
+   DELIBERATELY OUTSIDE BOTH DESIGN SYSTEMS. The bar is not part of Odin and
+   not part of Atlas: it exists so whoever is reviewing the prototype can drive
+   states that, in the real product, come from the merchant's account rather
+   than from a control on screen. Anything token-derived would read as product
+   chrome and defeat the point, so the greys below are hardcoded here and are
+   the only colours in the repo that belong to neither system. They are not
+   design decisions and nothing else should reference them.
+   ========================================================================== */
+
+:root { --proto-bar-h: 44px; }
+
+/* Odin sizes its shell against the viewport, so the bar has to be taken out of
+   that budget or the whole document gains a scrollbar and the content area
+   stops being the thing that scrolls. */
+body.has-proto-bar .shell { height: calc(100vh - var(--appbar-h) - var(--proto-bar-h)); }
+
+.proto-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: var(--proto-bar-h);
+  padding: 0 16px;
+  background: #15171d;
+  border-bottom: 1px solid #2c303a;
+  color: #d7dae2;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.proto-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b93a5;
+}
+
+.proto-bar__dot { width: 7px; height: 7px; border-radius: 50%; background: #e0a33a; }
+
+.proto-bar__group { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+
+.proto-bar__label { color: #8b93a5; }
+
+.proto-bar select {
+  height: 26px;
+  padding: 0 24px 0 8px;
+  background: #22262f
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238b93a5'%3E%3Cpath d='M4 6l4 4 4-4z'/%3E%3C/svg%3E")
+    no-repeat right 6px center / 12px 12px;
+  border: 1px solid #39404e;
+  border-radius: 4px;
+  color: #eef0f5;
+  font-family: inherit;
+  font-size: 12px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.proto-bar select:hover:not(:disabled) { border-color: #4d566a; }
+.proto-bar select:focus-visible { outline: 2px solid #e0a33a; outline-offset: 1px; }
+.proto-bar select:disabled { color: #697186; border-color: #2c303a; cursor: default; }
+
+.proto-bar__note { color: #697186; flex: 0 0 auto; }
+
+.proto-bar__spacer { flex: 1 1 auto; }
+
+.proto-bar__reset {
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid #39404e;
+  border-radius: 4px;
+  color: #d7dae2;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.proto-bar__reset:hover { background: #22262f; border-color: #4d566a; }
+.proto-bar__reset:focus-visible { outline: 2px solid #e0a33a; outline-offset: 1px; }

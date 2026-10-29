@@ -1,0 +1,177 @@
+/* ==========================================================================
+   Atlas design tokens — Light + Xplor Pay purple
+   File: withheld from this repo
+
+   Names match Atlas's own variable names, so reference code generated from
+   Figma (var(--color-background-brand-default), …) drops in unchanged.
+
+   Every value below was read from the Figma file with get_variable_defs,
+   except the four marked UNVERIFIED at the bottom of each block.
+   Scoped to .atlas so the Odin-green Devices page is unaffected.
+   ========================================================================== */
+
+.atlas {
+  /* ---------- Colour · text ---------- */
+  --color-text-primary: #14141c;
+  --color-text-secondary: #40404c;
+  --color-text-subtle: #6a6b76;
+  --color-text-disabled: #c9cad1;
+  --color-text-brand: #6923f4;
+  --color-text-on-brand: #ffffff;
+  --color-text-on-error: #ffffff;
+  --color-text-error: #c2210f;
+  --color-text-success: #24785d;
+  --color-text-warning: #b95900;
+  --color-text-info: #40404c;
+  --color-text-accent-blue: #356ccc;
+
+  /* ---------- Colour · background ---------- */
+  --color-background-page: #ffffff;
+  --color-background-surface-sunken: #fafafc;
+  --color-background-surface-raised-1: #ffffff;
+  --color-background-surface-raised-2: #ffffff;
+  --color-background-hover: #f4f4f7;
+  --color-background-disabled: #f4f4f7;
+  --color-background-neutral-default: #eaebef;
+  --color-background-brand-default: #793ef7;
+  --color-background-brand-hover: #6923f4;
+  --color-background-brand-active: #4d1ab2;
+  --color-background-brand-subtle: #f4f2ff;
+  --color-background-error-default: #c2210f;
+  --color-background-error-hover: #961305;
+  --color-background-error-active: #731409;
+  --color-background-error-subtle: #fef7f3;
+  --color-background-success-subtle: #ebfff8;
+  --color-background-warning-subtle: #fef7f3;
+  --color-background-info-subtle: #f4f4f7;
+  --color-background-accent-blue-subtle: #e8fcff;
+
+  /* ---------- Colour · border ---------- */
+  --color-border-default: #eaebef;
+  --color-border-subtle: #f4f4f7;
+  --color-border-strong: #6a6b76;
+  --color-border-input: #dddde3;
+  --color-border-brand: #8857fa;
+  --color-border-focus: #8857fa;
+  --color-border-error: #c2210f;
+  --color-border-success: #37b88f;
+
+  /* ---------- Colour · icon ---------- */
+  --color-icon-brand: #793ef7;
+  --color-icon-on-brand: #ffffff;
+  --color-icon-success: #2e9977;
+  --color-icon-warning: #dd6b00;
+  --color-icon-error: #db321f;
+  --color-icon-info: #6a6b76;
+  /* UNVERIFIED — no sampled Atlas frame binds these, so they could not be read
+     from Figma. Set to follow the pattern the other icon tokens show (one ramp
+     step lighter than the matching text token). Confirm with the designer. */
+  --color-icon-primary: #14141c;
+  --color-icon-secondary: #6a6b76;
+  --color-icon-disabled: #c9cad1;
+
+  /* ---------- Type ---------- */
+  --type-body-large-family: Roboto;    --type-body-large-size: 16px;
+  --type-body-large-weight: 400;       --type-body-large-line-height: 24px;
+  --type-body-large-letter-spacing: 0;
+
+  --type-body-default-family: Roboto;  --type-body-default-size: 14px;
+  --type-body-default-weight: 400;     --type-body-default-line-height: 20px;
+  --type-body-default-letter-spacing: 0;
+
+  --type-body-small-family: Roboto;    --type-body-small-size: 13px;
+  --type-body-small-weight: 400;       --type-body-small-line-height: 20px;
+  --type-body-small-letter-spacing: 0;
+
+  --type-body-bold-family: Roboto;     --type-body-bold-size: 14px;
+  --type-body-bold-weight: 600;        --type-body-bold-line-height: 20px;
+  --type-body-bold-letter-spacing: 0;
+
+  --type-caption-default-family: Roboto;  --type-caption-default-size: 12px;
+  --type-caption-default-weight: 400;     --type-caption-default-line-height: 16px;
+  --type-caption-default-letter-spacing: 0;
+
+  --type-label-default-family: Roboto; --type-label-default-size: 12px;
+  --type-label-default-weight: 500;    --type-label-default-line-height: 16px;
+  --type-label-default-letter-spacing: 0;
+
+  --type-control-default-family: Roboto;  --type-control-default-size: 14px;
+  --type-control-default-weight: 500;     --type-control-default-line-height: 20px;
+  --type-control-default-letter-spacing: 0;
+
+  --type-control-small-family: Roboto; --type-control-small-size: 12px;
+  --type-control-small-weight: 500;    --type-control-small-line-height: 16px;
+  --type-control-small-letter-spacing: 0;
+
+  --type-card-title-family: Roboto;    --type-card-title-size: 16px;
+  --type-card-title-weight: 600;       --type-card-title-line-height: 24px;
+  --type-card-title-letter-spacing: -0.16px;
+
+  --type-section-subtitle-family: Roboto;  --type-section-subtitle-size: 16px;
+  --type-section-subtitle-weight: 600;     --type-section-subtitle-line-height: 24px;
+  --type-section-subtitle-letter-spacing: -0.16px;
+
+  --type-code-default-family: "Roboto Mono"; --type-code-default-size: 13px;
+  --type-code-default-weight: 400;           --type-code-default-line-height: 20px;
+
+  /* UNVERIFIED — type/page/title/* exists in Atlas ("MUI h1", tracking −1%)
+     but no sampled frame uses it, so the size could not be read. Derived from
+     the type/letter-spacing/tight-30 primitive, described as "heading tracking
+     at 30px". Confirm with the designer. */
+  --type-page-title-family: Roboto;    --type-page-title-size: 30px;
+  --type-page-title-weight: 600;       --type-page-title-line-height: 36px;
+  --type-page-title-letter-spacing: -0.3px;
+
+  /* ---------- Space ---------- */
+  --space-gap-pair: 4px;
+  --space-gap-related: 8px;
+  --space-gap-group: 16px;
+  --space-gap-section: 32px;
+  --space-padding-cell: 8px;
+  --space-padding-item: 12px;
+  --space-padding-surface: 16px;
+  --space-padding-hero: 24px;
+  --space-padding-page: 32px;
+
+  /* ---------- Radius ---------- */
+  --radius-small: 4px;
+  --radius-default: 8px;
+  --radius-large: 12px;
+  --radius-full: 9999px;
+
+  /* ---------- Border ---------- */
+  --border-default: 1px;
+  --border-divider: 1px;
+  --border-thick: 2px;
+  --border-focus-width: 2px;
+  --border-focus-offset: 2px;
+
+  /* ---------- Size ---------- */
+  --size-control-x-small: 16px;
+  --size-control-small: 24px;
+  --size-control-medium: 32px;
+  --size-control-large: 40px;
+  --size-icon-default: 16px;
+  --size-icon-large: 24px;
+  --size-row: 44px;
+
+  /* ---------- Component ---------- */
+  --component-button-gap: 8px;
+  --component-button-padding-x-small: 8px;
+  --component-button-padding-x-medium: 12px;
+  --component-button-padding-x-large: 20px;
+  --component-input-gap: 8px;
+  --component-input-padding-x-medium: 8px;
+  --component-textfield-height-medium: 32px;
+  --component-textfield-height-large: 40px;
+  --component-menu-min-width: 200px;
+  --component-menu-max-height: 320px;
+
+  /* ---------- Effects ---------- */
+  --shadow-xs: 0 1px 3px rgba(20, 20, 28, 0.05);
+  --shadow-sm: 0 2px 4px -1px rgba(20, 20, 28, 0.07), 0 4px 8px -2px rgba(20, 20, 28, 0.05);
+  --shadow-button-contained:
+    inset 2px 2px 2px rgba(255, 255, 255, 0.15),
+    inset -2px -2px 2px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+}

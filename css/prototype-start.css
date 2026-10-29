@@ -1,0 +1,75 @@
+/* ==========================================================================
+   The prototype starter page.
+
+   This is the only page that is not an Odin screen: it is a way into the
+   prototype, so it draws no app bar or sidebar and does not load
+   css/styles.css. `.atlas` is the whole page here rather than a token scope
+   inside the Odin content area, which is why it carries the page background
+   and the min-height that css/order.css deliberately does not give it.
+   ========================================================================== */
+
+.atlas {
+  min-height: 100vh;
+  background: var(--color-background-surface-sunken);
+}
+
+.atlas .proto {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: calc(var(--space-padding-page) * 2) var(--space-padding-page);
+}
+
+.atlas .proto__head { margin-bottom: calc(var(--space-gap-section) * 1.5); }
+.atlas .proto__lede { max-width: 62ch; margin: var(--space-gap-group) 0 0; }
+
+.atlas .phases { display: flex; flex-direction: column; gap: var(--space-gap-group); }
+
+.atlas .phase { display: flex; flex-direction: column; gap: var(--space-gap-group); }
+
+.atlas .phase__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-gap-group);
+}
+
+.atlas .phase__titles { display: flex; flex-direction: column; gap: var(--space-gap-pair); }
+
+.atlas .phase__eyebrow {
+  font-size: var(--type-label-default-size);
+  font-weight: var(--type-label-default-weight);
+  line-height: var(--type-label-default-line-height);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+/* The list carries its own icons, so the markers come off. */
+.atlas .phase__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-gap-related); }
+
+.atlas .phase__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-gap-related);
+  color: var(--color-text-secondary);
+}
+
+/* Icons sit on the first line of a wrapped item rather than centred on it. */
+.atlas .phase__list .ms { flex: 0 0 auto; margin-top: 2px; }
+.atlas .phase__list .ms--done { color: var(--color-icon-success); }
+.atlas .phase__list .ms--todo { color: var(--color-icon-disabled); }
+
+.atlas .phase__actions { display: flex; align-items: center; gap: var(--space-gap-related); flex-wrap: wrap; }
+
+.atlas .proto__foot {
+  max-width: 62ch;
+  margin: var(--space-gap-section) 0 0;
+  color: var(--color-text-subtle);
+}
+
+.atlas .proto__foot code {
+  font-family: var(--type-code-default-family), monospace;
+  font-size: var(--type-code-default-size);
+  line-height: var(--type-code-default-line-height);
+  color: var(--color-text-secondary);
+}

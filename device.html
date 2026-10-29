@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Device · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/order.css">
+<link rel="stylesheet" href="css/prototype-bar.css">
+</head>
+<body>
+
+<div id="shell-root"></div>
+
+<!-- Moved into the Odin content area by renderShell(). -->
+<template id="page-template">
+  <div class="atlas">
+    <div class="page" id="main"></div>
+  </div>
+</template>
+
+<script src="js/shell.js"></script>
+<script src="js/devices-catalogue.js"></script>
+<script src="js/order.js"></script>
+<script src="js/prototype-bar.js"></script>
+<script>
+renderShell('device-list').append(document.getElementById('page-template').content);
+
+const params = new URLSearchParams(location.search);
+const device = deviceById(params.get('id')) || DEVICES[0];
+
+document.getElementById('main').innerHTML =
+  /* The way back to the catalogue, now that this page has no flow bar. */
+  '<a class="btn btn--tertiary back-link" href="order.html">' +
+    '<span class="ms" aria-hidden="true">chevron_left</span>Back' +
+  '</a>' +
+  /* The same head the catalogue uses, so the title and the cart stay put as
+     you move between the two. The cart is filled after this markup lands. */
+  '<div class="page__head">' +
+    '<h1 class="t-page-title">Order Devices</h1>' +
+    '<div id="cart"></div>' +
+  '</div>' +
+  '<div class="callout callout--info" style="margin-bottom:var(--space-gap-section)">' +
+    '<span class="ms" aria-hidden="true">info</span>' +
+    '<span class="callout__body">' +
+      '<span class="callout__title">Device ordering is in beta</span>' +
+      '<span class="callout__text">Orders placed now are fulfilled by the operations team and nothing is charged — a 100% beta discount is applied at checkout.</span>' +
+    '</span>' +
+  '</div>' +
+  '<div class="detail">' +
+    '<div class="detail__media"><img src="' + esc(device.image) + '" alt="' + esc(device.name) + '"></div>' +
+    '<div class="detail__side">' +
+      '<div>' +
+        '<h2 class="t-page-title">' + esc(device.name) + '</h2>' +
+        '<p class="detail__price" style="margin:var(--space-gap-related) 0 0">' + esc(money(device.price)) + '</p>' +
+      '</div>' +
+      '<div class="detail__buy">' +
+        '<span class="qty">' +
+          '<button class="qty__btn" type="button" id="dec" aria-label="Decrease quantity"><span class="ms" aria-hidden="true">remove</span></button>' +
+          '<input class="qty__value" id="qty" type="number" min="1" max="99" value="1" aria-label="Quantity">' +
+          '<button class="qty__btn" type="button" id="inc" aria-label="Increase quantity"><span class="ms" aria-hidden="true">add</span></button>' +
+        '</span>' +
+        '<button class="btn btn--primary btn--large" type="button" id="add">' +
+          '<span class="ms" aria-hidden="true">add_shopping_cart</span>Add to cart' +
+        '</button>' +
+      '</div>' +
+      '<p class="t-body-large t-secondary" style="margin:0">' + esc(device.intro) + '</p>' +
+      '<p style="margin:0">Use cases: ' + esc(device.useCases) + '</p>' +
+      '<div class="rows">' +
+        device.specs.map(function (s) {
+          return '<div class="row"><span class="row__key">' + esc(s[0]) + '</span>' +
+                 '<span class="row__val">' + esc(s[1]) + '</span></div>';
+        }).join('') +
+      '</div>' +
+      '<div>' +
+        '<h2 class="t-label t-secondary" style="text-transform:uppercase;margin:0 0 var(--space-gap-related)">Included accessories</h2>' +
+        '<div class="card accessories">' +
+          device.accessories.map(function (a) {
+            return '<span class="accessory"><span class="ms ms--secondary" aria-hidden="true">inventory_2</span>' + esc(a) + '</span>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+document.getElementById('cart').innerHTML = cartButtonHtml();
+
+const qtyInput = document.getElementById('qty');
+
+function clampQty() {
+  let n = Math.floor(Number(qtyInput.value) || 1);
+  n = Math.max(1, Math.min(99, n));
+  qtyInput.value = n;
+  document.getElementById('dec').disabled = n <= 1;
+  document.getElementById('inc').disabled = n >= 99;
+  return n;
+}
+
+document.getElementById('dec').addEventListener('click', function () { qtyInput.value = clampQty() - 1; clampQty(); });
+document.getElementById('inc').addEventListener('click', function () { qtyInput.value = clampQty() + 1; clampQty(); });
+qtyInput.addEventListener('input', clampQty);
+
+document.getElementById('add').addEventListener('click', function () {
+  addToCart(device.id, clampQty());
+  location.href = 'checkout.html';
+});
+
+clampQty();
+</script>
+</body>
+</html>

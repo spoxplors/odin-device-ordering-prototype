@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Layout for the device ordering flow.
+   Atlas has no page shell, grid or table, so these are composed from tokens.
+
+   The flow is not a full page: it renders inside the Odin content area, on the
+   page background rather than in a panel of its own, so `.atlas` is only a
+   token scope here and draws nothing. Every rule below is scoped to `.atlas`
+   so the Atlas layer cannot reach the Odin shell on the same page.
+   ========================================================================== */
+
+/* Odin's `.content` is a fixed-height flex column that scrolls, and supplies
+   the page padding. The flow must keep its natural height there: as a
+   shrinkable flex item it would be squashed to fit. */
+.atlas { flex: 0 0 auto; background: transparent; }
+
+/* ---------- Keeping the two systems apart ----------
+
+   Odin and Atlas both publish `.card` and `.badge`. Scoping decides which rule
+   wins per property, but a property Atlas never declares still falls through
+   to Odin's — which is how Odin's `display: flex`, `overflow: hidden` and
+   `mix-blend-mode: multiply` were reaching Atlas components. Declaring them
+   here keeps an Atlas component defined entirely by Atlas. These come first so
+   the Atlas cards that are deliberately flex, below, still override them.
+   ------------------------------------------------------------------------ */
+
+/* flex-direction is inert under `display: block`, but declaring it keeps the
+   devtools check above returning a clean result rather than two false hits. */
+.atlas .card { display: block; overflow: visible; flex-direction: row; }
+.atlas .badge { justify-content: center; mix-blend-mode: normal; }
+
+/* ---------- Flow bar ---------- */
+
+.atlas .flowbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-gap-group);
+  margin-bottom: var(--space-gap-section);
+}
+
+.atlas .flowbar__left { display: flex; align-items: center; gap: var(--space-gap-related); flex: 1 0 0; min-width: 0; }
+.atlas .flowbar__middle { display: flex; align-items: center; justify-content: center; }
+.atlas .flowbar__right { display: flex; align-items: center; justify-content: flex-end; flex: 1 0 0; }
+
+.atlas .flowbar__crumb {
+  font-size: var(--type-body-default-size);
+  font-weight: var(--type-body-bold-weight);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.atlas .flowbar__crumb--current { color: var(--color-text-primary); }
+.atlas .flowbar__sep { color: var(--color-icon-secondary); }
+.atlas .flowbar__beta { margin-left: var(--space-gap-pair); }
+
+/* ---------- Deliver to ---------- */
+
+.atlas .deliver { display: flex; align-items: center; gap: var(--space-gap-related); white-space: nowrap; }
+.atlas .deliver__select { width: 220px; height: var(--component-textfield-height-large); }
+
+/* ---------- Page ---------- */
+
+/* The way back out of a screen the nav does not reach. It sits above
+   everything else on the page, so its own button padding is cancelled on the
+   left to keep the label on the content edge. */
+.atlas .back-link {
+  margin: 0 0 var(--space-gap-group) calc(var(--component-button-padding-x-medium) * -1);
+}
+
+
+.atlas .page { width: 100%; }
+.atlas .page--narrow { max-width: 760px; margin: 0 auto; }
+
+/* One section gap below the title on every page, the same distance the
+   controls row keeps off the content below it. */
+.atlas .page__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-gap-group);
+  margin-bottom: var(--space-gap-section);
+}
+
+.atlas .controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-gap-group);
+  margin-bottom: var(--space-gap-section);
+}
+
+.atlas .filters { display: flex; flex-wrap: wrap; gap: var(--space-gap-related); }
+
+/* ---------- Catalogue grid ---------- */
+
+.atlas .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-gap-group); }
+
+.atlas .device-card { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-gap-group); text-decoration: none; color: inherit; }
+/* Badges hug their label rather than stretching to the card width. The
+   radius is Atlas's own component/badge/radius (4px) rather than the pill
+   the rest of the prototype's badges still use — the Atlas Badge spec
+   notes the 16px pill as an Odin divergence, and the user asked for this
+   one to follow the brand-subtle component. */
+.atlas .device-card > .badge { align-self: flex-start; border-radius: var(--radius-small); }
+.atlas .device-card:hover { border-color: var(--color-border-brand); }
+.atlas .device-card:focus-visible { outline: var(--border-focus-width) solid var(--color-border-focus); outline-offset: var(--border-focus-offset); }
+
+.atlas .device-card__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 250px;
+  padding: var(--space-padding-hero);
+  background: var(--color-background-surface-sunken);
+  border-radius: var(--radius-default);
+}
+.atlas .device-card__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+.atlas .device-card__name { font-size: var(--type-card-title-size); font-weight: var(--type-card-title-weight);
+  line-height: var(--type-card-title-line-height); letter-spacing: var(--type-card-title-letter-spacing); }
+.atlas .device-card__price { font-size: var(--type-body-large-size); line-height: var(--type-body-large-line-height);
+  color: var(--color-text-secondary); }
+.atlas .device-card__chips { display: flex; flex-wrap: wrap; gap: var(--space-gap-related); }
+
+.atlas .tag {
+  display: inline-flex; align-items: center;
+  padding: 2px var(--space-padding-cell);
+  background: var(--color-background-info-subtle);
+  border-radius: var(--radius-small);
+  font-size: var(--type-caption-default-size);
+  line-height: var(--type-caption-default-line-height);
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Device detail ---------- */
+
+
+.atlas .detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-gap-section); align-items: start; }
+
+.atlas .detail__media {
+  display: flex; align-items: center; justify-content: center;
+  height: 450px; padding: var(--space-padding-hero);
+  background: var(--color-background-surface-sunken);
+  border: var(--border-default) solid var(--color-border-default);
+  border-radius: var(--radius-large);
+}
+.atlas .detail__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+.atlas .detail__side { display: flex; flex-direction: column; gap: var(--space-gap-group); }
+.atlas .detail__price { font-size: var(--type-body-large-size); line-height: var(--type-body-large-line-height); color: var(--color-text-secondary); }
+.atlas .detail__buy { display: flex; align-items: center; gap: var(--space-gap-group); }
+
+.atlas .accessories { display: flex; flex-direction: column; gap: var(--space-gap-related); }
+.atlas .accessory { display: flex; align-items: center; gap: var(--space-gap-related);
+  padding: var(--space-padding-cell) 0; }
+
+/* ---------- Checkout ---------- */
+
+/* Without the old outer panel the checkout carries its own surface, so the
+   two columns and the divider between them still read as one object. */
+.atlas .checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+  gap: 0;
+  background: var(--color-background-surface-raised-1);
+  border: var(--border-default) solid var(--color-border-default);
+  border-radius: var(--radius-large);
+  overflow: hidden;
+}
+.atlas .checkout__left { padding: var(--space-padding-page) var(--space-padding-page) 64px; }
+.atlas .checkout__left-inner { max-width: 560px; margin-left: auto; }
+.atlas .checkout__right {
+  padding: var(--space-padding-page);
+  background: var(--color-background-surface-sunken);
+  border-left: var(--border-default) solid var(--color-border-default);
+  display: flex; flex-direction: column; gap: var(--space-gap-group);
+}
+
+.atlas .checkout__total { font-size: var(--type-page-title-size); font-weight: var(--type-page-title-weight);
+  line-height: var(--type-page-title-line-height); letter-spacing: var(--type-page-title-letter-spacing); }
+
+.atlas .line { display: flex; align-items: center; gap: var(--space-gap-group); padding: var(--space-padding-item) 0; }
+.atlas .line__qty {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; height: var(--size-control-small); padding: 0 var(--space-padding-cell);
+  background: var(--color-background-brand-subtle); border-radius: var(--radius-small);
+  font-size: var(--type-caption-default-size); font-weight: var(--type-label-default-weight);
+  color: var(--color-text-brand);
+}
+.atlas .line__body { flex: 1 0 0; min-width: 0; }
+.atlas .line__name { font-weight: var(--type-body-bold-weight); }
+.atlas .line__total { font-weight: var(--type-body-bold-weight); white-space: nowrap; }
+
+.atlas .lineup { display: flex; gap: var(--space-gap-group); align-items: flex-end; height: 160px; margin: var(--space-gap-group) 0; }
+.atlas .lineup img { max-height: 100%; object-fit: contain; }
+
+.atlas .summary { display: flex; flex-direction: column; }
+.atlas .summary .row { padding: var(--space-gap-related) 0; }
+.atlas .summary .row__key { flex: 1 0 0; font-weight: var(--type-body-default-weight); color: var(--color-text-secondary); }
+.atlas .summary__grand .row__key, .atlas .summary__grand .row__val { font-weight: var(--type-body-bold-weight); color: var(--color-text-primary); }
+.atlas .summary__discount .row__val { color: var(--color-text-success); }
+
+.atlas .address { display: flex; flex-direction: column; gap: var(--space-gap-related); }
+.atlas .address__block { display: flex; flex-direction: column; gap: 2px; color: var(--color-text-secondary); }
+
+.atlas .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-gap-group); }
+.atlas .form-grid .field--full { grid-column: 1 / -1; }
+
+/* ---------- Payment (Phase 2) ----------
+   Atlas publishes no radio or selection card, so the option rows are composed:
+   the native radio stays and carries the state, and the label around it is the
+   target. Selected takes the brand border and subtle wash the chip uses, so a
+   chosen option reads the same way across the flow. */
+
+.atlas .pay-options { display: flex; flex-direction: column; gap: var(--space-gap-related); margin-top: var(--space-gap-group); }
+
+.atlas .pay-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-gap-related);
+  padding: var(--space-padding-item);
+  background: var(--color-background-surface-raised-1);
+  border: var(--border-default) solid var(--color-border-input);
+  border-radius: var(--radius-default);
+  cursor: pointer;
+}
+.atlas .pay-option:hover { border-color: var(--color-border-brand); }
+.atlas .pay-option.is-selected { border-color: var(--color-border-brand); background: var(--color-background-brand-subtle); }
+.atlas .pay-option:focus-within { outline: var(--border-focus-width) solid var(--color-border-focus); outline-offset: var(--border-focus-offset); }
+
+/* Sized to sit on the first line of the title beside it. */
+.atlas .pay-option__radio { width: var(--size-icon-default); height: var(--size-icon-default); margin: 2px 0 0; accent-color: var(--color-background-brand-default); flex: 0 0 auto; }
+
+.atlas .pay-option__body { display: flex; flex-direction: column; gap: 2px; flex: 1 0 0; min-width: 0; }
+.atlas .pay-option__title { font-weight: var(--type-body-bold-weight); }
+.atlas .pay-option__text { font-size: var(--type-body-small-size); line-height: var(--type-body-small-line-height); color: var(--color-text-secondary); }
+
+.atlas .pay-card { margin-top: var(--space-gap-group); }
+
+/* ---------- Edit order modal ----------
+   One row per cart line, on the composed .modal in css/atlas-components.css.
+   The columns are fixed rather than fluid so the price, stepper and line total
+   stay in the same place down the list. */
+
+.atlas .cart-line {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto auto auto 110px;
+  align-items: center;
+  gap: var(--space-gap-group);
+  padding: var(--space-padding-surface) 0;
+  border-bottom: var(--border-default) solid var(--color-border-default);
+}
+.atlas .cart-line:last-child { border-bottom: 0; }
+
+.atlas .cart-line__media { display: flex; align-items: center; justify-content: center; height: 56px; }
+.atlas .cart-line__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+.atlas .cart-line__name { font-weight: var(--type-body-bold-weight); }
+.atlas .cart-line__unit { color: var(--color-text-secondary); white-space: nowrap; }
+.atlas .cart-line__total { text-align: right; font-weight: var(--type-body-bold-weight); white-space: nowrap; }
+
+/* Sized to the stepper beside it so the two read as one control group. */
+.atlas .cart-line__remove {
+  display: flex; align-items: center; justify-content: center;
+  width: var(--size-control-large); height: var(--size-control-large);
+  background: var(--color-background-surface-raised-1);
+  border: var(--border-default) solid var(--color-border-input);
+  border-radius: var(--radius-default);
+  color: var(--color-icon-secondary); cursor: pointer;
+}
+.atlas .cart-line__remove:hover { background: var(--color-background-hover); }
+.atlas .cart-line__remove:focus-visible { outline: var(--border-focus-width) solid var(--color-border-focus); outline-offset: var(--border-focus-offset); }
+
+/* The footer subtotal sits above the button, right-aligned with it. */
+.atlas .modal__subtotal { gap: var(--space-gap-section); }
+.atlas .modal__subtotal .row__key { color: var(--color-text-secondary); }
+.atlas .modal__subtotal .row__val { font-weight: var(--type-body-bold-weight); }
+
+.atlas .modal__empty { padding: var(--space-padding-hero) 0; color: var(--color-text-secondary); }
+
+/* ---------- Confirmation ---------- */
+
+.atlas .confirm { display: flex; flex-direction: column; gap: var(--space-gap-group); align-items: flex-start; }
+.atlas .confirm__icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: var(--radius-full);
+  background: var(--color-background-success-subtle);
+}
+.atlas .confirm__icon .ms { color: var(--color-icon-success); font-size: var(--size-icon-large); }
+
+/* A government order is not a success yet — it is waiting on a purchase order
+   and an invoice — so the tick and its green wash would overstate it. */
+.atlas .confirm__icon--neutral { background: var(--color-background-neutral-default); }
+.atlas .confirm__icon--neutral .ms { color: var(--color-icon-secondary); }
+
+/* ---------- Order summary ---------- */
+
+.atlas .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-gap-group);
+  margin-bottom: var(--space-gap-group);
+}
+
+.atlas .summary-card__title { margin: 0 0 var(--space-gap-related); }
+
+.atlas .summary-lines { padding: 0; }
+.atlas .summary-lines__title { padding: var(--space-padding-surface) var(--space-padding-surface) 0; }
+.atlas .summary-lines .line { padding: var(--space-padding-item) var(--space-padding-surface); }
+.atlas .summary-lines__totals {
+  padding: var(--space-padding-item) var(--space-padding-surface) var(--space-padding-surface);
+  border-top: var(--border-default) solid var(--color-border-default);
+}
+
+.atlas .line__thumb { height: 48px; width: auto; object-fit: contain; }
+
+/* ---------- Orders table ---------- */
+
+.atlas .otable { width: 100%; border-collapse: separate; border-spacing: 0; }
+.atlas .otable th {
+  height: var(--size-row); padding: var(--space-padding-cell) var(--space-padding-item);
+  background: var(--color-background-surface-sunken);
+  border-bottom: var(--border-default) solid var(--color-border-default);
+  text-align: left; font-size: var(--type-label-default-size); font-weight: var(--type-label-default-weight);
+  line-height: var(--type-label-default-line-height); color: var(--color-text-secondary);
+  text-transform: uppercase; white-space: nowrap;
+}
+.atlas .otable td {
+  height: var(--size-row); padding: var(--space-padding-cell) var(--space-padding-item);
+  box-shadow: inset 0 -1px 0 var(--color-border-default);
+  font-size: var(--type-body-default-size); color: var(--color-text-primary); white-space: nowrap;
+}
+.atlas .otable tbody tr:hover td { background: var(--color-background-hover); }
+.atlas .otable__row { cursor: pointer; }
+.atlas .otable tbody tr:last-child td { box-shadow: none; }
+
+.atlas .empty-state { padding: 64px var(--space-padding-hero); text-align: center; color: var(--color-text-subtle); }
+
+@media (max-width: 1100px) {
+  .atlas .grid, .atlas .detail, .atlas .checkout, .atlas .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .atlas .checkout__left-inner { max-width: none; margin-left: 0; }
+  .atlas .checkout__right { border-left: 0; border-top: var(--border-default) solid var(--color-border-default); }
+
+  /* The thumbnail and name keep the first row; price, stepper, remove and
+     total wrap under them rather than shrinking. */
+  .atlas .cart-line { grid-template-columns: 64px minmax(0, 1fr); gap: var(--space-gap-related) var(--space-gap-group); }
+  .atlas .cart-line__unit, .atlas .cart-line .qty, .atlas .cart-line__remove, .atlas .cart-line__total { grid-column: 2; }
+  .atlas .cart-line__total { text-align: left; }
+}

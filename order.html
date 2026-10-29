@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order devices · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/order.css">
+<link rel="stylesheet" href="css/prototype-bar.css">
+</head>
+<body>
+
+<div id="shell-root"></div>
+
+<!-- Moved into the Odin content area by renderShell(). -->
+<template id="page-template">
+  <div class="atlas">
+    <div class="page">
+      <div class="page__head">
+        <h1 class="t-page-title">Order Devices</h1>
+        <div id="cart"></div>
+      </div>
+
+      <div class="controls">
+        <div id="deliver"></div>
+        <div class="filters" id="filters" role="group" aria-label="Filter devices"></div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+      <p class="empty-state" id="empty" hidden>No devices match these filters.</p>
+    </div>
+  </div>
+</template>
+
+<script src="js/shell.js"></script>
+<script src="js/devices-catalogue.js"></script>
+<script src="js/order.js"></script>
+<script src="js/prototype-bar.js"></script>
+<script>
+renderShell('device-list').append(document.getElementById('page-template').content);
+
+const activeFilters = new Set();
+
+function allChips() {
+  const seen = [];
+  DEVICES.forEach(function (d) {
+    d.chips.forEach(function (c) { if (seen.indexOf(c) === -1) seen.push(c); });
+  });
+  return seen;
+}
+
+function renderFilters() {
+  document.getElementById('filters').innerHTML = allChips().map(function (c) {
+    const on = activeFilters.has(c);
+    return '<button class="chip" type="button" data-chip="' + esc(c) + '" aria-pressed="' + on + '">' +
+      '<span class="ms" aria-hidden="true">' + (on ? 'check' : 'add') + '</span>' + esc(c) + '</button>';
+  }).join('');
+}
+
+function visibleDevices() {
+  if (activeFilters.size === 0) return DEVICES;
+  return DEVICES.filter(function (d) {
+    return Array.from(activeFilters).every(function (c) { return d.chips.indexOf(c) !== -1; });
+  });
+}
+
+function renderGrid() {
+  const list = visibleDevices();
+  document.getElementById('empty').hidden = list.length > 0;
+  document.getElementById('grid').innerHTML = list.map(function (d) {
+    return '<a class="card device-card" href="device.html?id=' + esc(d.id) + '">' +
+      '<span class="badge badge--brand">Available to order</span>' +
+      '<span class="device-card__media"><img src="' + esc(d.image) + '" alt="' + esc(d.name) + '"></span>' +
+      '<span class="device-card__name">' + esc(d.name) + '</span>' +
+      '<span class="device-card__price">' + esc(money(d.price)) + '</span>' +
+      '<span class="device-card__chips">' +
+        d.chips.map(function (c) { return '<span class="tag">' + esc(c) + '</span>'; }).join('') +
+      '</span>' +
+    '</a>';
+  }).join('');
+}
+
+document.getElementById('filters').addEventListener('click', function (e) {
+  const btn = e.target.closest('[data-chip]');
+  if (!btn) return;
+  const chip = btn.dataset.chip;
+  if (activeFilters.has(chip)) activeFilters.delete(chip); else activeFilters.add(chip);
+  renderFilters();
+  renderGrid();
+});
+
+document.getElementById('cart').innerHTML = cartButtonHtml();
+document.getElementById('deliver').innerHTML = deliverToHtml();
+bindDeliverTo();
+
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>

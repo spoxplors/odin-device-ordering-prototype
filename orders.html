@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orders · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/order.css">
+<link rel="stylesheet" href="css/prototype-bar.css">
+</head>
+<body>
+
+<div id="shell-root"></div>
+
+<!-- Moved into the Odin content area by renderShell(). -->
+<template id="page-template">
+  <div class="atlas">
+    <div class="page">
+      <div class="page__head">
+        <h1 class="t-page-title">Orders</h1>
+        <a class="btn btn--primary" href="order.html">
+          <span class="ms" aria-hidden="true">add</span>Order Devices
+        </a>
+      </div>
+      <div class="card card--flush" id="panel"></div>
+    </div>
+  </div>
+</template>
+
+<script src="js/shell.js"></script>
+<script src="js/devices-catalogue.js"></script>
+<script src="js/order.js"></script>
+<script src="js/prototype-bar.js"></script>
+<script>
+renderShell('orders').append(document.getElementById('page-template').content);
+
+function statusBadge(status) {
+  const cls = status === 'In transit' ? 'badge--brand' : 'badge--neutral';
+  return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
+}
+
+function render() {
+  const panel = document.getElementById('panel');
+
+  if (!state.orders.length) {
+    panel.innerHTML = '<p class="empty-state">No device orders yet. ' +
+      '<a class="link" href="order.html">Order your first device</a>.</p>';
+    return;
+  }
+
+  panel.innerHTML =
+    '<table class="otable">' +
+      '<thead><tr>' +
+        '<th scope="col">Order</th><th scope="col">Placed</th><th scope="col">Merchant</th>' +
+        '<th scope="col">Devices</th><th scope="col">Shipping to</th><th scope="col">Total</th><th scope="col">Status</th>' +
+      '</tr></thead><tbody>' +
+      state.orders.map(function (o) {
+        const devices = o.lines.map(function (l) { return l.qty + ' × ' + l.name; }).join(', ');
+        const dest = [o.address.city, o.address.country].filter(Boolean).join(', ');
+        const href = 'order-summary.html?no=' + encodeURIComponent(o.number);
+        /* The whole row is clickable, but the order number carries the real
+           link so the row is still reachable by keyboard. */
+        return '<tr class="otable__row" data-href="' + esc(href) + '">' +
+          '<td><a class="link" href="' + esc(href) + '">' + esc(o.number) + '</a></td>' +
+          '<td>' + esc(formatPlaced(o.placedAt)) + '</td>' +
+          '<td>' + esc(o.merchant) + '</td>' +
+          '<td>' + esc(devices) + '</td>' +
+          '<td>' + esc(dest) + '</td>' +
+          '<td>' + esc(money(o.total)) + '</td>' +
+          '<td>' + statusBadge(o.status) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody>' +
+    '</table>';
+}
+
+/* Clicking anywhere in a row opens that order, except on the link itself,
+   which navigates on its own. */
+document.getElementById('panel').addEventListener('click', function (e) {
+  if (e.target.closest('a')) return;
+  const row = e.target.closest('[data-href]');
+  if (row) location.href = row.dataset.href;
+});
+
+render();
+</script>
+</body>
+</html>

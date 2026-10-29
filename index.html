@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Device ordering prototype · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/prototype-start.css">
+</head>
+
+<!-- No Odin shell and no css/styles.css: this page is the way into the
+     prototype, not a screen inside Odin. -->
+<body class="atlas">
+
+<div class="proto">
+
+  <header class="proto__head">
+    <h1 class="t-page-title">Device ordering prototype</h1>
+    <p class="proto__lede t-body-large t-secondary">
+      Merchants ordering Victa devices from Odin, launching in three phases.
+      Each phase builds on the one before it. Phases 1 and 2 are built and can
+      be walked through; Phase 3 is specified but not built yet.
+    </p>
+    <p class="proto__lede t-body-small t-subtle">
+      A dark settings bar sits above the Odin chrome in the prototype. It is
+      scaffolding, not part of the product: use it to switch phase, to order as
+      a merchant or as internal ops, and to set the merchant type.
+    </p>
+  </header>
+
+  <div class="phases">
+
+    <!-- ---------- Phase 1 ---------- -->
+    <section class="card card--hero phase" aria-labelledby="phase-1-title">
+      <div class="phase__head">
+        <div class="phase__titles">
+          <span class="phase__eyebrow">Phase 1</span>
+          <h2 class="t-card-title" id="phase-1-title">Ordering form</h2>
+        </div>
+        <span class="badge badge--success">Built</span>
+      </div>
+
+      <ul class="phase__list">
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>Device catalogue and detail pages for the Victa Portable and Victa Mobile</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>A quantity per device, held in a cart and editable at checkout</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>Shipping address defaulting to the business address on file, with an edit step</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>Submit, which emails the internal operations team — no payment step, and a 100% BETA discount brings the total to zero</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>A confirmation screen, an orders list and an order summary, with the status moving to <em>In transit</em> once operations has fulfilled the order</span></li>
+      </ul>
+
+      <div class="phase__actions">
+        <a class="btn btn--primary btn--large" href="devices.html?phase=1">
+          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 1
+        </a>
+      </div>
+    </section>
+
+    <!-- ---------- Phase 2 ---------- -->
+    <section class="card card--hero phase" aria-labelledby="phase-2-title">
+      <div class="phase__head">
+        <div class="phase__titles">
+          <span class="phase__eyebrow">Phase 2</span>
+          <h2 class="t-card-title" id="phase-2-title">Payment added</h2>
+        </div>
+        <span class="badge badge--success">Built</span>
+      </div>
+
+      <ul class="phase__list">
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>Everything in Phase 1, with the 100% beta discount replaced by a real total — subtotal, shipping and tax</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>A payment section on checkout: pay by card, or have the full amount deducted from next month's payout</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>The order is placed only once payment completes</span></li>
+        <li><span class="ms ms--done" aria-hidden="true">check</span>
+          <span>Government entities skip payment entirely — the order goes to the sales rep, who sends a purchase order and invoice outside Odin</span></li>
+        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
+          <span>Failed payment is still an open question in the spec, so the simulated payment always succeeds</span></li>
+      </ul>
+
+      <div class="phase__actions">
+        <a class="btn btn--primary btn--large" href="devices.html?phase=2">
+          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 2
+        </a>
+      </div>
+    </section>
+
+    <!-- ---------- Phase 3 ---------- -->
+    <section class="card card--hero phase" aria-labelledby="phase-3-title">
+      <div class="phase__head">
+        <div class="phase__titles">
+          <span class="phase__eyebrow">Phase 3</span>
+          <h2 class="t-card-title" id="phase-3-title">Payment plans added</h2>
+        </div>
+        <span class="badge badge--neutral">Not built yet</span>
+      </div>
+
+      <ul class="phase__list">
+        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
+          <span>Everything in Phase 2, with the payment step extended</span></li>
+        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
+          <span>Pay in full by card today, or schedule monthly deductions from payouts</span></li>
+        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
+          <span>Scheduled deductions add an administration processing fee to the totals, then confirm the payment schedule</span></li>
+      </ul>
+
+      <div class="phase__actions">
+        <button class="btn btn--primary btn--large" type="button" disabled>
+          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 3
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+  <p class="proto__foot t-body-small">
+    The phases come from <code>user-flows/flow.md</code>, which also lists the
+    open questions still to settle. Phase 1 is built as five screens rather than
+    that document's single form, following the supplied mockups. Phase 2 adds
+    payment to those same screens rather than a separate review screen, and its
+    shipping and tax figures are placeholders, not a tax calculation.
+  </p>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/order.css">
+<link rel="stylesheet" href="css/prototype-bar.css">
+</head>
+<body>
+
+<div id="shell-root"></div>
+
+<!-- Moved into the Odin content area by renderShell(). -->
+<template id="page-template">
+  <div class="atlas">
+    <div class="page" id="main"></div>
+  </div>
+</template>
+
+<script src="js/shell.js"></script>
+<script src="js/devices-catalogue.js"></script>
+<script src="js/order.js"></script>
+<script src="js/prototype-bar.js"></script>
+<script>
+renderShell('orders').append(document.getElementById('page-template').content);
+
+const order = orderByNumber(new URLSearchParams(location.search).get('no'));
+const main = document.getElementById('main');
+
+function statusBadge(status) {
+  const cls = status === 'In transit' ? 'badge--brand' : 'badge--neutral';
+  return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
+}
+
+function row(key, val) {
+  return '<div class="row"><span class="row__key">' + esc(key) + '</span>' +
+         '<span class="row__val">' + val + '</span></div>';
+}
+
+/* Orders placed before Phase 2 carry no paymentMethod, so the absent case is
+   the Phase 1 one: nothing was ever charged. */
+function paymentLabel(order) {
+  switch (order.paymentMethod) {
+    case 'card':    return 'Card';
+    case 'payout':  return 'Deducted from next payout';
+    case 'invoice': return 'Purchase order and invoice, outside Odin';
+    default:        return 'None taken \u2014 100% beta discount';
+  }
+}
+
+/* 'Paid' only tells the truth when money actually moved. */
+function totalLabel(order) {
+  switch (order.paymentMethod) {
+    case 'payout':  return 'To be deducted';
+    case 'invoice': return 'Order total';
+    default:        return 'Paid';
+  }
+}
+
+/* An order number that matches nothing — a stale link, or storage cleared
+   since the order was placed. */
+function renderMissing() {
+  main.className = 'page page--narrow';
+  main.innerHTML =
+    '<a class="btn btn--tertiary back-link" href="orders.html">' +
+      '<span class="ms" aria-hidden="true">chevron_left</span>Back to orders' +
+    '</a>' +
+    '<div class="page__head"><h1 class="t-page-title">Order not found</h1></div>' +
+    '<p class="t-body-large t-secondary">That order is not in this browser. ' +
+    '<a class="link" href="orders.html">Back to orders</a>.</p>';
+}
+
+function render() {
+  document.title = 'Order ' + order.number + ' · Odin';
+
+  main.innerHTML =
+    /* The way back to the orders table: the summary is only reachable from
+       there, and the nav's Orders item is the only other way out. */
+    '<a class="btn btn--tertiary back-link" href="orders.html">' +
+      '<span class="ms" aria-hidden="true">chevron_left</span>Back to orders' +
+    '</a>' +
+    '<div class="page__head">' +
+      '<h1 class="t-page-title">Order ' + esc(order.number) + '</h1>' +
+    '</div>' +
+
+    '<div class="summary-grid">' +
+      '<div class="card">' +
+        '<h2 class="t-card-title summary-card__title">Order</h2>' +
+        '<div class="rows">' +
+          row('Status', statusBadge(order.status)) +
+          row('Placed', esc(formatPlaced(order.placedAt))) +
+          row('Business', esc(order.business)) +
+          row('Merchant', esc(order.merchant)) +
+          row('Delivering to', esc(order.country)) +
+          row('Payment', esc(paymentLabel(order))) +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2 class="t-card-title summary-card__title">Shipping address</h2>' +
+        '<div class="address__block">' +
+          addressLines(order.address).map(function (l) {
+            return '<span>' + esc(l) + '</span>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card card--flush summary-lines">' +
+      '<h2 class="t-card-title summary-card__title summary-lines__title">Devices</h2>' +
+      order.lines.map(function (l) {
+        const device = deviceById(l.id);
+        return '<div class="line">' +
+          '<span class="line__qty">' + esc(l.qty) + ' ×</span>' +
+          (device ? '<img class="line__thumb" src="' + esc(device.image) + '" alt="">' : '') +
+          '<span class="line__body">' +
+            '<span class="line__name">' + esc(l.name) + '</span><br>' +
+            '<span class="t-secondary">' + esc(money(l.unit)) + ' each</span>' +
+          '</span>' +
+          '<span class="line__total">' + esc(money(l.lineTotal)) + '</span>' +
+        '</div>';
+      }).join('') +
+
+      '<div class="summary summary-lines__totals">' +
+        row('Subtotal', esc(money(order.subtotal))) +
+        (order.discount > 0
+          ? '<div class="row summary__discount"><span class="row__key">BETA discount (100%)</span>' +
+            '<span class="row__val">−' + esc(money(order.discount)) + '</span></div>'
+          : '') +
+        (order.shipping ? row('Shipping', esc(money(order.shipping))) : '') +
+        (order.tax ? row(order.taxLabel || 'Tax', esc(money(order.tax))) : '') +
+        '<div class="row summary__grand"><span class="row__key">' + esc(totalLabel(order)) + '</span>' +
+          '<span class="row__val">' + esc(money(order.total)) + '</span></div>' +
+      '</div>' +
+    '</div>';
+}
+
+if (order) render(); else renderMissing();
+</script>
+</body>
+</html>

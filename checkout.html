@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout · Odin</title>
+<link rel="icon" href="assets/brand/logomark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/atlas.css">
+<link rel="stylesheet" href="css/atlas-components.css">
+<link rel="stylesheet" href="css/order.css">
+<link rel="stylesheet" href="css/prototype-bar.css">
+</head>
+<body>
+
+<div id="shell-root"></div>
+
+<!-- Moved into the Odin content area by renderShell(). -->
+<template id="page-template">
+  <div class="atlas">
+    <div id="view"></div>
+  </div>
+</template>
+
+<script src="js/shell.js"></script>
+<script src="js/devices-catalogue.js"></script>
+<script src="js/order.js"></script>
+<script src="js/prototype-bar.js"></script>
+<script>
+renderShell('device-list').append(document.getElementById('page-template').content);
+
+const view = document.getElementById('view');
+let editingAddress = false;
+
+/* ---------- Empty cart ---------- */
+
+function renderEmpty() {
+  view.innerHTML =
+    '<main class="page page--narrow">' +
+    '<a class="btn btn--tertiary back-link" href="order.html">' +
+      '<span class="ms" aria-hidden="true">chevron_left</span>Return to Devices' +
+    '</a>' +
+      '<div class="page__head"><h1 class="t-page-title">Checkout</h1></div>' +
+      '<div class="card" style="text-align:center">' +
+        '<p class="t-secondary">Your cart is empty.</p>' +
+        '<a class="btn btn--primary" href="order.html">Browse devices</a>' +
+      '</div>' +
+    '</main>';
+}
+
+/* ---------- Address ---------- */
+
+function addressBlock() {
+  const a = currentAddress();
+  if (!editingAddress) {
+    return '<div class="address">' +
+      '<div class="address__block">' +
+        addressLines(a).map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('') +
+      '</div>' +
+      '<div><button class="btn btn--secondary btn--small" type="button" id="edit-address">' +
+        '<span class="ms" aria-hidden="true">edit</span>Edit address</button></div>' +
+    '</div>';
+  }
+  function field(id, label, value, full) {
+    return '<label class="field' + (full ? ' field--full' : '') + '">' +
+      '<span class="field__label">' + esc(label) + '</span>' +
+      '<span class="input"><input id="' + id + '" type="text" value="' + esc(value) + '"></span>' +
+    '</label>';
+  }
+  return '<div class="address">' +
+    '<div class="form-grid">' +
+      field('addr-company', 'Company name', a.company, true) +
+      field('addr-line1', 'Address line 1', a.line1, true) +
+      field('addr-line2', 'Address line 2', a.line2, true) +
+      field('addr-city', 'City', a.city) +
+      field('addr-region', 'State or region', a.region) +
+      field('addr-postcode', 'Postcode', a.postcode) +
+      field('addr-country', 'Country', a.country) +
+    '</div>' +
+    '<div style="display:flex;gap:var(--space-gap-related)">' +
+      '<button class="btn btn--primary btn--small" type="button" id="save-address">Save address</button>' +
+      '<button class="btn btn--tertiary btn--small" type="button" id="reset-address">Reset to business address</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------- Ordering for ---------- */
+
+/* The Merchant / Internal ops switch used to live here. It is a prototype
+   setting rather than something a real user would toggle mid-checkout, so it
+   moved to the bar at the top of the page; this card keeps only the pickers
+   that an ops user genuinely fills in. */
+function orderingForBlock() {
+  const ops = state.mode === 'ops';
+  const business = businessByName(state.business);
+
+  let picker;
+  if (!ops) {
+    picker = '<div class="address__block">' +
+      '<span class="line__name">' + esc(state.merchant) + '</span>' +
+      '<span>' + esc(state.business) + '</span>' +
+    '</div>';
+  } else {
+    const businessOpts = BUSINESSES.map(function (b) {
+      return '<option' + (b.name === state.business ? ' selected' : '') + '>' + esc(b.name) + '</option>';
+    }).join('');
+    const merchantOpts = ['<option value="">Select a merchant…</option>'].concat(
+      business.merchants.map(function (m) {
+        return '<option' + (m === state.merchant ? ' selected' : '') + '>' + esc(m) + '</option>';
+      })
+    ).join('');
+    picker =
+      '<label class="field"><span class="field__label">Business</span>' +
+        '<span class="input"><select id="pick-business">' + businessOpts + '</select>' +
+        '<span class="ms ms--secondary" aria-hidden="true">keyboard_arrow_down</span></span></label>' +
+      '<label class="field"><span class="field__label">Merchant <span class="field__required" aria-hidden="true">*</span></span>' +
+        '<span class="input"><select id="pick-merchant">' + merchantOpts + '</select>' +
+        '<span class="ms ms--secondary" aria-hidden="true">keyboard_arrow_down</span></span>' +
+        (merchantMissing() ? '<span class="field__helper field__helper--error"><span class="ms" aria-hidden="true">error</span>Choose the merchant this order is for.</span>' : '') +
+      '</label>';
+  }
+
+  return '<section class="card"><h2 class="t-card-title">Ordering for</h2>' +
+    '<div style="display:flex;flex-direction:column;gap:var(--space-gap-group);margin-top:var(--space-gap-group)">' +
+      picker +
+    '</div></section>';
+}
+
+function merchantMissing() {
+  return state.mode === 'ops' && !state.merchant;
+}
+
+/* ---------- Totals ---------- */
+
+function row(key, val, cls) {
+  return '<div class="row' + (cls ? ' ' + cls : '') + '">' +
+    '<span class="row__key">' + key + '</span>' +
+    '<span class="row__val">' + val + '</span></div>';
+}
+
+/* Phase 1 shows what an order would cost and then cancels it; Phase 2 shows
+   what is actually being charged. The discount row only appears when there is
+   a discount, so the two read as the same summary with different inputs. */
+function summaryBlock(t) {
+  const rows = [row('Subtotal', esc(money(t.subtotal)))];
+
+  if (t.discount > 0) {
+    rows.push(row('BETA discount (100%)', '−' + esc(money(t.discount)), 'summary__discount'));
+  }
+
+  if (isPhase2()) {
+    rows.push(row('Shipping', esc(money(t.shipping))));
+    rows.push(row(esc(t.taxLabel), t.taxNote
+      ? '<span class="t-subtle">' + esc(t.taxNote) + '</span>'
+      : esc(money(t.tax))));
+  } else {
+    rows.push(row('Shipping', '<span class="t-subtle">Free during beta</span>'));
+    rows.push(row('Tax', '<span class="t-subtle">' + esc(money(0)) + '</span>'));
+  }
+
+  return '<div class="summary">' + rows.join('') +
+    '<hr class="divider">' +
+    row(isPhase2() ? 'Total due' : 'Payment total', esc(money(t.total)), 'summary__grand') +
+    (isPhase2()
+      ? '<p class="t-caption t-subtle" style="margin:var(--space-gap-related) 0 0">' +
+        'Shipping and tax are indicative placeholder rates, not a tax calculation.</p>'
+      : '') +
+  '</div>';
+}
+
+/* ---------- Payment ----------
+
+   NO CARD DATA IS STORED. The fields below are inert mocks: nothing typed into
+   them is written to state, to localStorage, to the order record or to the
+   console. They are read once, at submit, to check they are not empty, and are
+   then discarded — which also means a re-render (editing the address, closing
+   the cart dialog) clears them, and they have to be typed again.
+
+   This is NOT the pattern for the real build. Production Odin must use the
+   payment provider's hosted or tokenised fields so that a card number never
+   enters Odin's DOM at all. */
+
+const CARD_FIELDS = [
+  { id: 'card-name', label: 'Name on card', placeholder: 'As printed on the card', full: true },
+  { id: 'card-number', label: 'Card number', placeholder: '4242 4242 4242 4242', full: true },
+  { id: 'card-expiry', label: 'Expiry', placeholder: 'MM / YY' },
+  { id: 'card-cvc', label: 'Security code', placeholder: 'CVC' }
+];
+
+let cardError = false;
+
+function cardFieldsBlock() {
+  const fields = CARD_FIELDS.map(function (f) {
+    return '<label class="field' + (f.full ? ' field--full' : '') + '">' +
+      '<span class="field__label">' + esc(f.label) + '</span>' +
+      '<span class="input"><input id="' + f.id + '" type="text" autocomplete="off" ' +
+        'spellcheck="false" placeholder="' + esc(f.placeholder) + '"></span>' +
+    '</label>';
+  }).join('');
+
+  /* The on-screen "do not enter real card details" notice was removed on the
+     user's instruction. The guarantee it described still holds, and is enforced
+     here and in the submit handler rather than by that notice. */
+  return '<div class="pay-card">' +
+    '<div class="form-grid">' + fields + '</div>' +
+    (cardError
+      ? '<p class="field__helper field__helper--error" style="margin-top:var(--space-gap-related)">' +
+        '<span class="ms" aria-hidden="true">error</span>Fill the card fields to continue.</p>'
+      : '') +
+  '</div>';
+}
+
+function payOption(value, title, text, selected) {
+  return '<label class="pay-option' + (selected ? ' is-selected' : '') + '">' +
+    '<input class="pay-option__radio" type="radio" name="pay-method" value="' + value + '"' +
+      (selected ? ' checked' : '') + '>' +
+    '<span class="pay-option__body">' +
+      '<span class="pay-option__title">' + title + '</span>' +
+      '<span class="pay-option__text">' + text + '</span>' +
+    '</span>' +
+  '</label>';
+}
+
+function paymentBlock(t) {
+  /* A government entity pays nothing in Odin, so there is no payment step at
+     all — flow.md Phase 2, step 3. */
+  if (isGovernment()) {
+    return '<section class="card">' +
+      '<h2 class="t-card-title">Place order</h2>' +
+      '<div class="callout callout--info" style="margin-top:var(--space-gap-group)">' +
+        '<span class="ms" aria-hidden="true">receipt_long</span>' +
+        '<span class="callout__body">' +
+          '<span class="callout__text">This order goes to your sales rep for review and will ' +
+          'provide a purchase order for approval and then an invoice.</span>' +
+        '</span>' +
+      '</div>' +
+    '</section>';
+  }
+
+  const card = state.paymentMethod !== 'payout';
+
+  return '<section class="card">' +
+    '<h2 class="t-card-title">Payment</h2>' +
+    '<div class="pay-options" role="radiogroup" aria-label="Payment method">' +
+      payOption('card', 'Pay by card',
+        'Charged when you submit this order.', card) +
+      payOption('payout', 'Deduct from next month\u2019s payout',
+        esc(money(t.total)) + ' comes out of your ' + esc(nextPayoutMonth()) + ' payout.', !card) +
+    '</div>' +
+    (card ? cardFieldsBlock() : '') +
+  '</section>';
+}
+
+/* The banner above the order. Phase 1 explains why nothing is charged; Phase 2
+   has a real amount, so it explains what happens on submit instead. */
+function headerCallout(t) {
+  if (!isPhase2()) {
+    return '<div class="callout callout--info">' +
+      '<span class="ms" aria-hidden="true">info</span>' +
+      '<span class="callout__body">' +
+        '<span class="callout__title">No payment is taken during beta</span>' +
+        '<span class="callout__text">A 100% beta discount brings the payment total to ' + esc(money(0)) +
+        '. Operations is emailed when you submit, and fulfils the order outside Odin.</span>' +
+      '</span>' +
+    '</div>';
+  }
+
+  if (isGovernment()) {
+    return '<div class="callout callout--info">' +
+      '<span class="ms" aria-hidden="true">info</span>' +
+      '<span class="callout__body">' +
+        '<span class="callout__title">Government entity order</span>' +
+        '<span class="callout__text">Submitting sends this to your sales rep rather than ' +
+        'taking payment. The purchase order and invoice are handled outside Odin.</span>' +
+      '</span>' +
+    '</div>';
+  }
+
+  return '<div class="callout callout--info">' +
+    '<span class="ms" aria-hidden="true">info</span>' +
+    '<span class="callout__body">' +
+      '<span class="callout__title">The order is placed once payment completes</span>' +
+      '<span class="callout__text">Operations is emailed after that, and fulfils the order ' +
+      'outside Odin.</span>' +
+    '</span>' +
+  '</div>';
+}
+
+function submitLabel() {
+  if (isGovernment()) return 'Submit to sales rep';
+  if (isPhase2()) return 'Pay and submit order';
+  return 'Submit order';
+}
+
+/* ---------- Checkout ---------- */
+
+function renderCheckout() {
+  const t = totals();
+
+  const lineup = t.lines.map(function (l) {
+    return '<img src="' + esc(l.device.image) + '" alt="">';
+  }).join('');
+
+  const lines = t.lines.map(function (l) {
+    return '<div class="line">' +
+      '<span class="line__qty">' + l.qty + ' ×</span>' +
+      '<span class="line__body">' +
+        '<span class="line__name">' + esc(l.device.name) + '</span><br>' +
+        '<span class="t-body-small t-secondary">' + esc(money(l.device.price)) + ' each</span>' +
+      '</span>' +
+      '<span class="line__total">' + esc(money(l.lineTotal)) + '</span>' +
+    '</div>';
+  }).join('<hr class="divider">');
+
+  const summary = summaryBlock(t);
+
+  view.innerHTML =
+    '<div class="page">' +
+    /* Same way back as the detail page: neither is reachable from the nav. */
+    '<a class="btn btn--tertiary back-link" href="order.html">' +
+      '<span class="ms" aria-hidden="true">chevron_left</span>Return to Devices' +
+    '</a>' +
+    '<div class="page__head"><h1 class="t-page-title">Checkout</h1></div>' +
+    '<div class="checkout">' +
+      '<div class="checkout__left"><div class="checkout__left-inner">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-gap-group)">' +
+          '<div>' +
+            '<p class="t-label t-secondary" style="margin:0;text-transform:uppercase">Device order</p>' +
+            '<p class="checkout__total" style="margin:var(--space-gap-pair) 0 0">' + esc(money(t.total)) + '</p>' +
+          '</div>' +
+          '<button class="btn btn--secondary" type="button" id="edit-order">Edit order</button>' +
+        '</div>' +
+        '<div class="lineup">' + lineup + '</div>' +
+        lines +
+        '<hr class="divider" style="margin:var(--space-gap-group) 0">' +
+        summary +
+      '</div></div>' +
+
+      '<div class="checkout__right">' +
+        headerCallout(t) +
+
+        orderingForBlock() +
+
+        '<section class="card">' +
+          '<h2 class="t-card-title">Contact</h2>' +
+          '<div class="form-grid" style="margin-top:var(--space-gap-group)">' +
+            '<label class="field field--full"><span class="field__label">Recipient’s name</span>' +
+              '<span class="input"><input id="recipient" type="text" value="' + esc(state.contact.recipient) + '" placeholder="Who should we address it to?"></span></label>' +
+            '<label class="field field--full"><span class="field__label">Email</span>' +
+              '<span class="input"><input id="email" type="email" value="' + esc(state.contact.email) + '" placeholder="name@example.com"></span>' +
+              '<span class="field__helper">Used for delivery updates only.</span></label>' +
+          '</div>' +
+        '</section>' +
+
+        '<section class="card">' +
+          '<h2 class="t-card-title">Shipping address</h2>' +
+          '<p class="t-body-small t-subtle" style="margin:var(--space-gap-pair) 0 var(--space-gap-group)">Defaults to the business address on file.</p>' +
+          addressBlock() +
+        '</section>' +
+
+        /* Payment sits last, directly above the button that acts on it. In
+           Phase 1 there is nothing to show. */
+        (isPhase2() ? paymentBlock(t) : '') +
+
+        '<button class="btn btn--primary btn--large" type="button" id="submit" style="width:100%">' +
+          submitLabel() + '</button>' +
+        '<p class="t-caption t-subtle" style="margin:0;text-align:center">Delivering to ' + esc(state.country) + '</p>' +
+      '</div>' +
+    '</div>' +
+    '</div>';
+
+  wireCheckout();
+}
+
+function wireCheckout() {
+  const byId = function (id) { return document.getElementById(id); };
+
+  view.querySelectorAll('[name="pay-method"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      state.paymentMethod = r.value;
+      cardError = false;
+      commit();
+      renderCheckout();
+    });
+  });
+
+  const pickBusiness = byId('pick-business');
+  if (pickBusiness) {
+    pickBusiness.addEventListener('change', function () {
+      state.business = pickBusiness.value;
+      state.merchant = '';
+      resetAddressToBusiness();
+      renderCheckout();
+    });
+  }
+
+  const pickMerchant = byId('pick-merchant');
+  if (pickMerchant) {
+    pickMerchant.addEventListener('change', function () {
+      state.merchant = pickMerchant.value;
+      commit();
+      renderCheckout();
+    });
+  }
+
+  const recipient = byId('recipient');
+  if (recipient) recipient.addEventListener('input', function () { state.contact.recipient = recipient.value; commit(); });
+  const email = byId('email');
+  if (email) email.addEventListener('input', function () { state.contact.email = email.value; commit(); });
+
+  const editOrder = byId('edit-order');
+  if (editOrder) editOrder.addEventListener('click', openCartModal);
+
+  const editBtn = byId('edit-address');
+  if (editBtn) editBtn.addEventListener('click', function () { editingAddress = true; renderCheckout(); });
+
+  const saveBtn = byId('save-address');
+  if (saveBtn) saveBtn.addEventListener('click', function () {
+    state.address = {
+      company: byId('addr-company').value,
+      line1: byId('addr-line1').value,
+      line2: byId('addr-line2').value,
+      city: byId('addr-city').value,
+      region: byId('addr-region').value,
+      postcode: byId('addr-postcode').value,
+      country: byId('addr-country').value
+    };
+    commit();
+    editingAddress = false;
+    renderCheckout();
+  });
+
+  const resetBtn = byId('reset-address');
+  if (resetBtn) resetBtn.addEventListener('click', function () {
+    resetAddressToBusiness();
+    editingAddress = false;
+    renderCheckout();
+  });
+
+  const submit = byId('submit');
+  submit.disabled = merchantMissing();
+  submit.addEventListener('click', function () {
+    if (merchantMissing()) { renderCheckout(); return; }
+
+    /* Read once, check, discard. The values are never assigned anywhere that
+       outlives this function. */
+    if (isPhase2() && !isGovernment() && state.paymentMethod === 'card') {
+      const filled = CARD_FIELDS.every(function (f) {
+        const el = byId(f.id);
+        return el && el.value.trim() !== '';
+      });
+      if (!filled) {
+        cardError = true;
+        renderCheckout();
+        const first = byId(CARD_FIELDS[0].id);
+        if (first) first.focus();
+        return;
+      }
+    }
+    cardError = false;
+
+    /* flow.md Phase 2: the order is placed only once payment completes, so the
+       button holds while that is simulated. It always succeeds — failed
+       payment is still an open question in the spec. */
+    if (isPhase2() && !isGovernment()) {
+      submit.disabled = true;
+      submit.textContent = state.paymentMethod === 'card'
+        ? 'Processing payment…' : 'Scheduling deduction…';
+      setTimeout(function () { renderConfirmation(submitOrder()); }, 1200);
+      return;
+    }
+
+    renderConfirmation(submitOrder());
+  });
+}
+
+/* ---------- Edit order ----------
+   Atlas has no Modal, so this is the composed .modal from
+   css/atlas-components.css. Quantity changes land in the cart as they are
+   made — there is no Cancel — and the checkout behind is re-rendered on close
+   so its lineup, line totals and summary pick them up. */
+
+let modalReturnFocus = null;
+
+function cartModalBody() {
+  const lines = cartLines();
+  if (!lines.length) return '<p class="modal__empty">Your cart is empty.</p>';
+
+  return lines.map(function (l) {
+    const name = esc(l.device.name);
+    return '<div class="cart-line" data-id="' + esc(l.device.id) + '">' +
+      '<span class="cart-line__media"><img src="' + esc(l.device.image) + '" alt=""></span>' +
+      '<span class="cart-line__name">' + name + '</span>' +
+      '<span class="cart-line__unit">' + esc(money(l.device.price)) + '</span>' +
+      '<span class="qty">' +
+        '<button class="qty__btn" type="button" data-step="-1"' + (l.qty <= 1 ? ' disabled' : '') +
+          ' aria-label="Decrease quantity of ' + name + '"><span class="ms" aria-hidden="true">remove</span></button>' +
+        '<input class="qty__value" type="number" min="1" max="99" value="' + l.qty + '" aria-label="Quantity of ' + name + '">' +
+        '<button class="qty__btn" type="button" data-step="1"' + (l.qty >= 99 ? ' disabled' : '') +
+          ' aria-label="Increase quantity of ' + name + '"><span class="ms" aria-hidden="true">add</span></button>' +
+      '</span>' +
+      '<button class="cart-line__remove" type="button" data-remove aria-label="Remove ' + name + ' from the cart">' +
+        '<span class="ms" aria-hidden="true">delete</span></button>' +
+      '<span class="cart-line__total">' + esc(money(l.lineTotal)) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* focusSel keeps the keyboard where it was across a repaint; the control it
+   names is gone whenever that line was removed, so fall back to the footer. */
+function paintCartModal(focusSel) {
+  const host = document.getElementById('cart-modal');
+  const t = totals();
+
+  host.innerHTML =
+    '<div class="modal__dialog">' +
+      '<div class="modal__head">' +
+        '<h2 class="t-card-title modal__title" id="cart-modal-title">Cart</h2>' +
+        '<button class="modal__close" type="button" id="cart-modal-close" aria-label="Close">' +
+          '<span class="ms" aria-hidden="true">close</span></button>' +
+      '</div>' +
+      '<div class="modal__body">' + cartModalBody() + '</div>' +
+      '<div class="modal__foot">' +
+        '<div class="row modal__subtotal">' +
+          '<span class="row__key">Subtotal</span>' +
+          '<span class="row__val">' + esc(money(t.subtotal)) + '</span>' +
+        '</div>' +
+        '<button class="btn btn--secondary" type="button" id="cart-modal-done">Return to checkout</button>' +
+      '</div>' +
+    '</div>';
+
+  wireCartModal();
+
+  const wanted = focusSel && host.querySelector(focusSel);
+  (wanted || host.querySelector('#cart-modal-done')).focus();
+}
+
+function wireCartModal() {
+  const host = document.getElementById('cart-modal');
+
+  host.querySelector('#cart-modal-close').addEventListener('click', closeCartModal);
+  host.querySelector('#cart-modal-done').addEventListener('click', closeCartModal);
+
+  host.querySelectorAll('.cart-line').forEach(function (row) {
+    const id = row.dataset.id;
+    const input = row.querySelector('.qty__value');
+    const rowSel = '.cart-line[data-id="' + id + '"] ';
+
+    row.querySelectorAll('[data-step]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        setQty(id, Number(input.value) + Number(b.dataset.step));
+        paintCartModal(rowSel + '[data-step="' + b.dataset.step + '"]');
+      });
+    });
+
+    /* On input only the numbers move: repainting mid-keystroke would take the
+       field out from under the cursor. The row is reconciled on blur. */
+    input.addEventListener('input', function () {
+      setQty(id, input.value);
+      refreshCartTotals();
+    });
+    input.addEventListener('change', function () { paintCartModal(rowSel + '.qty__value'); });
+
+    row.querySelector('[data-remove]').addEventListener('click', function () {
+      setQty(id, 0);
+      paintCartModal();
+    });
+  });
+}
+
+/* Keeps the line total and subtotal honest while a quantity is being typed. */
+function refreshCartTotals() {
+  const host = document.getElementById('cart-modal');
+  const t = totals();
+
+  /* Walk the rows on screen, not the cart: a field cleared to nothing has
+     already dropped its line, and that row still needs its total zeroed. */
+  host.querySelectorAll('.cart-line').forEach(function (row) {
+    const line = t.lines.filter(function (l) { return l.device.id === row.dataset.id; })[0];
+    row.querySelector('.cart-line__total').textContent = money(line ? line.lineTotal : 0);
+  });
+  host.querySelector('.modal__subtotal .row__val').textContent = money(t.subtotal);
+}
+
+function onModalKey(e) {
+  if (e.key === 'Escape') closeCartModal();
+}
+
+function openCartModal() {
+  modalReturnFocus = document.activeElement;
+
+  const host = document.createElement('div');
+  host.className = 'modal';
+  host.id = 'cart-modal';
+  host.setAttribute('role', 'dialog');
+  host.setAttribute('aria-modal', 'true');
+  host.setAttribute('aria-labelledby', 'cart-modal-title');
+
+  /* Inside .atlas so the dialog is in the Atlas token scope. */
+  document.querySelector('.atlas').appendChild(host);
+  host.addEventListener('click', function (e) { if (e.target === host) closeCartModal(); });
+  document.addEventListener('keydown', onModalKey);
+
+  paintCartModal('#cart-modal-close');
+}
+
+function closeCartModal() {
+  const host = document.getElementById('cart-modal');
+  if (host) host.remove();
+  document.removeEventListener('keydown', onModalKey);
+
+  /* Emptying the cart in the dialog leaves the checkout with nothing to show. */
+  if (cartCount() === 0) { renderEmpty(); return; }
+
+  renderCheckout();
+  const back = document.getElementById('edit-order');
+  if (back) back.focus();
+  else if (modalReturnFocus) modalReturnFocus.focus();
+}
+
+/* ---------- Confirmation ----------
+   What happened differs by branch, so the heading, the explanation and the
+   money row all do. Phase 1 keeps the wording it had. */
+
+function confirmCopy(order) {
+  if (order.paymentMethod === 'invoice') {
+    return {
+      icon: 'receipt_long',
+      iconClass: ' confirm__icon--neutral',
+      title: 'Order ' + esc(order.number) + ' sent to your sales rep',
+      body: 'Your sales rep sends a purchase order and invoice outside Odin. Operations fulfils ' +
+            'the order once that is settled, and the status here updates to In transit when it ' +
+            'is on its way.',
+      moneyKey: 'Order total',
+      moneyVal: esc(money(order.total)),
+      extra: ['Payment', 'Purchase order and invoice, outside Odin']
+    };
+  }
+
+  if (order.paymentMethod === 'payout') {
+    return {
+      icon: 'check',
+      iconClass: '',
+      title: 'Order ' + esc(order.number) + ' placed',
+      body: 'We\u2019ve emailed the operations team. They fulfil the order outside Odin, and the ' +
+            'status here updates to In transit once it\u2019s on its way.',
+      moneyKey: 'To be deducted',
+      moneyVal: esc(money(order.total)) + ' from your ' + esc(nextPayoutMonth()) + ' payout',
+      extra: null
+    };
+  }
+
+  if (order.paymentMethod === 'card') {
+    return {
+      icon: 'check',
+      iconClass: '',
+      title: 'Order ' + esc(order.number) + ' placed',
+      body: 'Payment went through and we\u2019ve emailed the operations team. They fulfil the ' +
+            'order outside Odin, and the status here updates to In transit once it\u2019s on its way.',
+      moneyKey: 'Paid today',
+      moneyVal: esc(money(order.total)) + ' by card',
+      extra: null
+    };
+  }
+
+  /* Phase 1 — nothing was charged. */
+  return {
+    icon: 'check',
+    iconClass: '',
+    title: 'Order ' + esc(order.number) + ' placed',
+    body: 'We\u2019ve emailed the operations team. They fulfil the order outside Odin, and the ' +
+          'status here updates to In transit once it\u2019s on its way.',
+    moneyKey: 'Paid today',
+    moneyVal: esc(money(order.total)),
+    extra: null
+  };
+}
+
+function renderConfirmation(order) {
+  const c = confirmCopy(order);
+
+  view.innerHTML =
+    '<main class="page page--narrow">' +
+    '<a class="btn btn--tertiary back-link" href="order.html">' +
+      '<span class="ms" aria-hidden="true">chevron_left</span>Return to Devices' +
+    '</a>' +
+      '<div class="confirm">' +
+        '<span class="confirm__icon' + c.iconClass + '">' +
+          '<span class="ms" aria-hidden="true">' + c.icon + '</span></span>' +
+        '<h1 class="t-page-title">' + c.title + '</h1>' +
+        '<p class="t-body-large t-secondary" style="margin:0">' + c.body + '</p>' +
+        '<div class="card" style="width:100%">' +
+          '<div class="rows">' +
+            '<div class="row"><span class="row__key">Merchant</span><span class="row__val">' + esc(order.merchant) + '</span></div>' +
+            '<div class="row"><span class="row__key">Devices</span><span class="row__val">' +
+              order.lines.map(function (l) { return esc(l.qty + ' × ' + l.name); }).join('<br>') +
+            '</span></div>' +
+            '<div class="row"><span class="row__key">Shipping to</span><span class="row__val">' +
+              addressLines(order.address).map(esc).join('<br>') +
+            '</span></div>' +
+            (c.extra ? '<div class="row"><span class="row__key">' + esc(c.extra[0]) + '</span>' +
+              '<span class="row__val">' + esc(c.extra[1]) + '</span></div>' : '') +
+            '<div class="row"><span class="row__key">' + esc(c.moneyKey) + '</span>' +
+              '<span class="row__val">' + c.moneyVal + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:var(--space-gap-related)">' +
+          '<a class="btn btn--primary" href="orders.html">View orders</a>' +
+          '<a class="btn btn--secondary" href="order.html">Order more devices</a>' +
+        '</div>' +
+      '</div>' +
+    '</main>';
+}
+
+/* ---------- Boot ---------- */
+
+if (cartCount() === 0) renderEmpty(); else renderCheckout();
+</script>
+</body>
+</html>
