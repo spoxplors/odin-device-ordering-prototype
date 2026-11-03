@@ -33,7 +33,7 @@ const DEFAULT_STATE = {
   business: 'Clubessential',
   merchant: 'Clubessential',
   address: null,
-  contact: { recipient: '', email: '' },
+  contact: { recipient: '', email: '', phone: '' },
   orders: []
 };
 

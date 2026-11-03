@@ -345,13 +345,19 @@ function renderCheckout() {
 
         orderingForBlock() +
 
+        /* All three fields are optional, in both modes — the description says
+           so. Nothing here gates submit. */
         '<section class="card">' +
-          '<h2 class="t-card-title">Contact</h2>' +
-          '<div class="form-grid" style="margin-top:var(--space-gap-group)">' +
+          '<h2 class="t-card-title">Delivery Contact Information</h2>' +
+          '<p class="t-body-small t-subtle" style="margin:var(--space-gap-pair) 0 var(--space-gap-group)">Optionally add contact information for delivery updates.</p>' +
+          '<div class="form-grid">' +
             '<label class="field field--full"><span class="field__label">Recipient’s name</span>' +
               '<span class="input"><input id="recipient" type="text" value="' + esc(state.contact.recipient) + '" placeholder="Who should we address it to?"></span></label>' +
             '<label class="field field--full"><span class="field__label">Email</span>' +
               '<span class="input"><input id="email" type="email" value="' + esc(state.contact.email) + '" placeholder="name@example.com"></span>' +
+              '<span class="field__helper">Used for delivery updates only.</span></label>' +
+            '<label class="field field--full"><span class="field__label">Contact phone number</span>' +
+              '<span class="input"><input id="phone" type="tel" value="' + esc(state.contact.phone) + '" placeholder="+44 20 7946 0000"></span>' +
               '<span class="field__helper">Used for delivery updates only.</span></label>' +
           '</div>' +
         '</section>' +
@@ -411,6 +417,8 @@ function wireCheckout() {
   if (recipient) recipient.addEventListener('input', function () { state.contact.recipient = recipient.value; commit(); });
   const email = byId('email');
   if (email) email.addEventListener('input', function () { state.contact.email = email.value; commit(); });
+  const phone = byId('phone');
+  if (phone) phone.addEventListener('input', function () { state.contact.phone = phone.value; commit(); });
 
   const editOrder = byId('edit-order');
   if (editOrder) editOrder.addEventListener('click', openCartModal);

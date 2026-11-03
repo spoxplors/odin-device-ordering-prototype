@@ -34,6 +34,10 @@ before changing anything there.
 
 Most recent round of changes, in order:
 
+- **The checkout's Contact card became *Delivery Contact Information***, gained
+  a description reading *Optionally add contact information for delivery
+  updates.* and a **Contact phone number** field under Email, sharing Email's
+  *Used for delivery updates only.* helper. `state.contact` grew a `phone`.
 - **The catalogue's controls row was removed** — the *Deliver to* control and
   the filter chips both, on the user's instruction. The catalogue now shows
   every device, and the chips survive only as the plain `.tag`s on each card.
@@ -311,6 +315,11 @@ anything already crawled may persist in caches for a while.
   `.atlas .controls` and `.atlas .filters` in `css/order.css` and `.atlas .chip`
   in `css/atlas-components.css` are dead but kept, marked as such, so the row
   can go back as it was.
+- **The contact card is the same in both modes.** The user asked for the new
+  heading, description and phone field while looking at the page as internal
+  ops, and was asked whether the change should be ops-only; they chose both
+  modes, so there is one card and one copy. All three fields stay optional —
+  the description says so and nothing gates submit on them.
 - **Checkout has a page title.** `<h1 class="t-page-title">Checkout</h1>` in
   the same `.page__head` the catalogue, Orders and the order summary use, on
   both the filled and the empty-cart screens.
@@ -457,7 +466,17 @@ open question in flow.md.
   and stand in for an authorised, tenant-scoped API response.
 - The supplied checkout mockup contains a personal email address. It was
   deliberately **not** carried into the prototype; the email field uses a
-  neutral placeholder. Keep it that way.
+  neutral placeholder. Keep it that way. The phone field's placeholder is
+  `+44 20 7946 0000`, from Ofcom's range reserved for fiction, for the same
+  reason — do not replace it with a real number.
+- **The checkout now collects a name, an email and a phone number**, and all
+  three sit in `localStorage` under `odin.deviceOrdering.v1` and on every order
+  placed. That is personal data as soon as anyone types something real into it,
+  and the prototype is on a public URL, so reviewers should use invented
+  details. It never leaves the browser — there is no backend — but *Reset
+  prototype* is the only thing that clears it, and it survives reloads until
+  then. Unlike the card fields (see *Card data*), these values are deliberately
+  retained, because the order record is meant to carry them.
 - Device renders, headlines and specs come from the Verifone Victa datasheets
   bundled with the `victa-devices-datasheets` skill. The hardware facts are
   Verifone's — do not edit them.
@@ -488,6 +507,12 @@ Phase 2:
   *Submit to sales rep*, a neutral confirmation icon rather than the green tick,
   and the order lands as *Awaiting purchase order*
 - internal ops still blocks submit until a merchant is chosen
+- the contact card reads *Delivery Contact Information* with its description
+  and three optional fields in **both** modes and both phases, and submit is
+  not blocked when they are all empty
+- what is typed into the phone field survives a reload and appears on the order
+  record under `contact.phone` — and a `localStorage` entry written before the
+  field existed still renders an empty box, not `undefined`
 
 Phase 1 — it must still behave exactly as it did before Phase 2 existed:
 
