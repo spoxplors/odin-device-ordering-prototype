@@ -34,6 +34,9 @@ before changing anything there.
 
 Most recent round of changes, in order:
 
+- **The sidebar collapses.** Its collapse button now works on every page that
+  draws the shell, toggling to a 72px icons-only rail and back. The preference
+  is remembered — see the bullet in *Decisions*.
 - **The checkout's Contact card became *Delivery Contact Information***, gained
   a description reading *Optionally add contact information for delivery
   updates.* and a **Contact phone number** field under Email, sharing Email's
@@ -98,7 +101,7 @@ No build step, no dependencies.
 |---|---|
 | `index.html` | Starter page — the three phases and the way into each. `css/prototype-start.css` |
 | `devices.html` | Devices list (Odin green). `css/styles.css`, `js/app.js`, `js/data.js`, plus the ordering state module for the prototype bar |
-| `js/shell.js` | The Odin app bar and sidebar, shared by all six pages |
+| `js/shell.js` | The Odin app bar and sidebar, shared by all six pages; also the sidebar's collapse toggle |
 | `order.html` | Catalogue — device cards. No filters, no *Deliver to* |
 | `device.html?id=…` | Device detail — specs, accessories, quantity, Add to cart |
 | `checkout.html` | Checkout, the Cart dialog behind *Edit order*, and the confirmation screen after submit |
@@ -315,6 +318,20 @@ anything already crawled may persist in caches for a while.
   `.atlas .controls` and `.atlas .filters` in `css/order.css` and `.atlas .chip`
   in `css/atlas-components.css` are dead but kept, marked as such, so the row
   can go back as it was.
+- **The collapsed sidebar is remembered, under its own key.** Every page is
+  its own document, so a collapse held only in memory would undo itself on the
+  first nav click — the user asked for the button to work, and across a
+  multi-page prototype that means persisting it. It is written to
+  **`odin.sidebarCollapsed`**, not to `odin.deviceOrdering.v1`: pages draw a
+  sidebar whether or not they load `js/order.js`, and *Reset prototype* should
+  not spring the menu open. Dropping the persistence is a matter of deleting
+  the two `localStorage` lines in `js/shell.js`.
+  Collapsed, `.sidebar.is-collapsed` in `css/styles.css` takes the rail to
+  `--sidebar-w-collapsed` (72px) and hides the labels and group titles with
+  `display: none` rather than removing them, so a screen reader still reads the
+  full nav; `applySidebarCollapsed()` adds each label as a `title` so sighted
+  users get a tooltip, and swaps the button's `aria-label` and `aria-expanded`.
+  There is no animation, because `css/styles.css` uses no transitions anywhere.
 - **The contact card is the same in both modes.** The user asked for the new
   heading, description and phone field while looking at the page as internal
   ops, and was asked whether the change should be ops-only; they chose both
@@ -570,8 +587,16 @@ After a push, verify on the **live site** as well as localhost. Case-sensitive
 paths and files left out of the commit only fail there: load each page and
 check the network panel for anything that is not 200.
 
+The sidebar's collapse button should work on all six shell pages and survive
+navigation between them: collapse it on the Devices page, click through to the
+catalogue and the checkout, and it should still be a 72px rail with the chevron
+pointing right and each icon showing its label on hover. Clicking it again
+restores the 240px menu. Neither state may give the document a horizontal
+scrollbar, and the content area — not the document — must still be what scrolls.
+
 Cart and orders live in `localStorage` under `odin.deviceOrdering.v1`. Clear it
-to start from an empty state. It is per-origin, so an order placed on one port
+to start from an empty state; the sidebar preference is separate, under
+`odin.sidebarCollapsed`. It is per-origin, so an order placed on one port
 is invisible on another — if a test order seems to have vanished, check the
 port before chasing the bug. Everyone opening the live site gets their own
 `localStorage`, so no reviewer can see another's test orders.

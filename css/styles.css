@@ -43,6 +43,8 @@
   /* Metrics */
   --appbar-h: 72px;
   --sidebar-w: 240px;
+  /* Collapsed: 12px of sidebar padding + a 20px icon + 12px, each side. */
+  --sidebar-w-collapsed: 72px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -280,6 +282,23 @@ button { font: inherit; }
 .nav-item.is-active { background: var(--white); color: var(--gray-900); box-shadow: var(--shadow-xs); }
 
 .nav-divider { width: 100%; height: 1px; margin: 16px 0; }
+
+/* Collapsed to icons only. The labels and group titles are hidden rather than
+   removed, so the nav reads the same to a screen reader; js/shell.js adds each
+   label as a tooltip while the sidebar is in this state. */
+.sidebar.is-collapsed {
+  flex-basis: var(--sidebar-w-collapsed);
+  width: var(--sidebar-w-collapsed);
+}
+
+.sidebar.is-collapsed .nav-item > span,
+.sidebar.is-collapsed .nav-group__title { display: none; }
+
+.sidebar.is-collapsed .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+
+.sidebar.is-collapsed .sidebar__collapse { justify-content: center; padding-left: 0; padding-right: 0; }
+
+.sidebar.is-collapsed .collapse-btn img { transform: rotate(180deg); }
 
 /* ==========================================================================
    Content

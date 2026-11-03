@@ -6,7 +6,9 @@
    one place keeps the nav from drifting between the Devices list and the flow.
 
    renderShell(activeKey) writes the shell into the document and returns the
-   <main class="content"> element for the page to fill.
+   <main class="content"> element for the page to fill. It also wires the
+   sidebar's collapse button — see bindSidebarCollapse() at the foot of this
+   file.
    ========================================================================== */
 
 function renderShell(activeKey) {
@@ -55,10 +57,10 @@ function renderShell(activeKey) {
     '</header>' +
 
     '<div class="shell">' +
-      '<nav class="sidebar" aria-label="Main">' +
+      '<nav class="sidebar" id="sidebar" aria-label="Main">' +
         '<div class="sidebar__inner">' +
           '<div class="sidebar__collapse">' +
-            '<button class="collapse-btn" type="button" aria-label="Collapse menu">' +
+            '<button class="collapse-btn" type="button" id="collapse-btn" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse menu">' +
               '<img src="assets/icons/chevrons-left.svg" alt="" width="12" height="12">' +
             '</button>' +
           '</div>' +
@@ -69,7 +71,59 @@ function renderShell(activeKey) {
       '<main class="content" id="content"></main>' +
     '</div>';
 
+  bindSidebarCollapse();
+
   return document.getElementById('content');
+}
+
+/* ==========================================================================
+   Sidebar collapse.
+
+   Every page is its own document, so a collapse that lived only in memory
+   would undo itself on the first nav click. The preference is kept under its
+   own key rather than in the ordering state: pages have a sidebar whether or
+   not they load js/order.js, and *Reset prototype* should not expand it.
+   ========================================================================== */
+
+const SIDEBAR_KEY = 'odin.sidebarCollapsed';
+
+function sidebarIsCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function applySidebarCollapsed(collapsed) {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('collapse-btn');
+
+  sidebar.classList.toggle('is-collapsed', collapsed);
+  btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  btn.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+
+  /* Collapsed, the labels are hidden and the icons repeat across groups, so
+     each one carries its label as a tooltip. The text stays in the DOM either
+     way, so a screen reader reads the nav unchanged. */
+  Array.prototype.forEach.call(sidebar.querySelectorAll('.nav-item'), function (link) {
+    if (collapsed) link.setAttribute('title', link.textContent.trim());
+    else link.removeAttribute('title');
+  });
+}
+
+function bindSidebarCollapse() {
+  document.getElementById('collapse-btn').addEventListener('click', function () {
+    const next = !document.getElementById('sidebar').classList.contains('is-collapsed');
+    try {
+      localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
+    } catch (e) {
+      /* The preference does not survive this session; the toggle still works. */
+    }
+    applySidebarCollapsed(next);
+  });
+
+  applySidebarCollapsed(sidebarIsCollapsed());
 }
 
 const NAV_GROUPS = [
