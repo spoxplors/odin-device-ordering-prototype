@@ -69,8 +69,7 @@
 .atlas .page { width: 100%; }
 .atlas .page--narrow { max-width: 760px; margin: 0 auto; }
 
-/* One section gap below the title on every page, the same distance the
-   controls row keeps off the content below it. */
+/* One section gap below the title on every page. */
 .atlas .page__head {
   display: flex;
   align-items: center;
@@ -79,6 +78,8 @@
   margin-bottom: var(--space-gap-section);
 }
 
+/* Dead since the catalogue's controls row was removed — no page has one. Kept,
+   like the .flowbar rules above, so the row can be put back as it was. */
 .atlas .controls {
   display: flex;
   align-items: center;

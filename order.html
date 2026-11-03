@@ -28,13 +28,8 @@
         <div id="cart"></div>
       </div>
 
-      <div class="controls">
-        <div id="deliver"></div>
-        <div class="filters" id="filters" role="group" aria-label="Filter devices"></div>
-      </div>
-
       <div class="grid" id="grid"></div>
-      <p class="empty-state" id="empty" hidden>No devices match these filters.</p>
+      <p class="empty-state" id="empty" hidden>No devices are available to order.</p>
     </div>
   </div>
 </template>
@@ -46,35 +41,12 @@
 <script>
 renderShell('device-list').append(document.getElementById('page-template').content);
 
-const activeFilters = new Set();
-
-function allChips() {
-  const seen = [];
-  DEVICES.forEach(function (d) {
-    d.chips.forEach(function (c) { if (seen.indexOf(c) === -1) seen.push(c); });
-  });
-  return seen;
-}
-
-function renderFilters() {
-  document.getElementById('filters').innerHTML = allChips().map(function (c) {
-    const on = activeFilters.has(c);
-    return '<button class="chip" type="button" data-chip="' + esc(c) + '" aria-pressed="' + on + '">' +
-      '<span class="ms" aria-hidden="true">' + (on ? 'check' : 'add') + '</span>' + esc(c) + '</button>';
-  }).join('');
-}
-
-function visibleDevices() {
-  if (activeFilters.size === 0) return DEVICES;
-  return DEVICES.filter(function (d) {
-    return Array.from(activeFilters).every(function (c) { return d.chips.indexOf(c) !== -1; });
-  });
-}
-
+/* The catalogue shows every device: the filter chips and the Deliver to
+   control were removed from the controls row, and the row with them. The
+   chips survive on each card as plain tags. */
 function renderGrid() {
-  const list = visibleDevices();
-  document.getElementById('empty').hidden = list.length > 0;
-  document.getElementById('grid').innerHTML = list.map(function (d) {
+  document.getElementById('empty').hidden = DEVICES.length > 0;
+  document.getElementById('grid').innerHTML = DEVICES.map(function (d) {
     return '<a class="card device-card" href="device.html?id=' + esc(d.id) + '">' +
       '<span class="badge badge--brand">Available to order</span>' +
       '<span class="device-card__media"><img src="' + esc(d.image) + '" alt="' + esc(d.name) + '"></span>' +
@@ -87,20 +59,8 @@ function renderGrid() {
   }).join('');
 }
 
-document.getElementById('filters').addEventListener('click', function (e) {
-  const btn = e.target.closest('[data-chip]');
-  if (!btn) return;
-  const chip = btn.dataset.chip;
-  if (activeFilters.has(chip)) activeFilters.delete(chip); else activeFilters.add(chip);
-  renderFilters();
-  renderGrid();
-});
-
 document.getElementById('cart').innerHTML = cartButtonHtml();
-document.getElementById('deliver').innerHTML = deliverToHtml();
-bindDeliverTo();
 
-renderFilters();
 renderGrid();
 </script>
 </body>

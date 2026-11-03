@@ -1,6 +1,6 @@
 # Handover — Odin device ordering POC
 
-Last updated: 29 October 2026
+Last updated: 3 November 2026
 
 Picking this up fresh: read this file top to bottom first. *Decisions already
 made* and *Gotchas worth knowing* are the two sections that will save you
@@ -34,6 +34,13 @@ before changing anything there.
 
 Most recent round of changes, in order:
 
+- **The catalogue's controls row was removed** — the *Deliver to* control and
+  the filter chips both, on the user's instruction. The catalogue now shows
+  every device, and the chips survive only as the plain `.tag`s on each card.
+  This took the last writer of `state.country` with it: see *Open items*.
+
+The round before that:
+
 - **The prototype was published** — a public GitHub repo and a GitHub Pages
   site. See *Publishing* below; it changes what may go into a commit.
 - `prototype-start.html` became **`index.html`**, and what was `index.html` —
@@ -54,7 +61,7 @@ Most recent round of changes, in order:
 - the order summary gained a *Back to orders* link, as must any summary page
   added later
 
-The round before that:
+The round before that again:
 
 - **Phase 2 was built**: real totals in place of the beta discount, a payment
   section on checkout (card or next month's payout), a government-entity branch
@@ -88,7 +95,7 @@ No build step, no dependencies.
 | `index.html` | Starter page — the three phases and the way into each. `css/prototype-start.css` |
 | `devices.html` | Devices list (Odin green). `css/styles.css`, `js/app.js`, `js/data.js`, plus the ordering state module for the prototype bar |
 | `js/shell.js` | The Odin app bar and sidebar, shared by all six pages |
-| `order.html` | Catalogue — device cards, filter chips |
+| `order.html` | Catalogue — device cards. No filters, no *Deliver to* |
 | `device.html?id=…` | Device detail — specs, accessories, quantity, Add to cart |
 | `checkout.html` | Checkout, the Cart dialog behind *Edit order*, and the confirmation screen after submit |
 | `orders.html` | Submitted orders, status *In transit*; rows open a summary |
@@ -98,7 +105,7 @@ No build step, no dependencies.
 | `css/order.css` | Layout for the ordering flow only |
 | `css/prototype-start.css` | Layout for the starter page only |
 | `js/devices-catalogue.js` | Victa device data, prices, businesses, countries |
-| `js/order.js` | Cart, totals, address, orders; the phase / merchant-type helpers and the *Deliver to* / Cart controls |
+| `js/order.js` | Cart, totals, address, orders; the phase / merchant-type helpers and the Cart control |
 | `js/prototype-bar.js` | The prototype settings bar. `css/prototype-bar.css` |
 | `user-flows/flow.md` | The source flow spec — three phases |
 | `assets/devices/victa/` | Victa renders from the datasheets skill |
@@ -244,8 +251,10 @@ anything already crawled may persist in caches for a while.
   and `device.html`, and finally off `order-summary.html`. Nothing calls
   `renderFlowBar()` any more. The summary lost its *Order Devices* button in
   the same pass — the nav's *Device list* item is the way back to ordering.
-  `deliverToHtml()`, `bindDeliverTo()` and `cartButtonHtml()` are still live:
-  the catalogue's filter row uses all three.
+  Of the three controls it composed, only `cartButtonHtml()` is still called —
+  by the catalogue and the device detail page. `deliverToHtml()` and
+  `bindDeliverTo()` went dead when the catalogue's controls row was removed,
+  and `COUNTRIES` in `js/devices-catalogue.js` is now read by dead code alone.
 - **The order summary carries a back link to Orders**, and so must any
   summary page added later. It is the same `.back-link` tertiary button with a
   chevron as the two pages below, but it reads *Back to orders* and goes to
@@ -284,14 +293,24 @@ anything already crawled may persist in caches for a while.
   the two. The *Back* link sits above it, and the device's own name stepped
   down to an `h2` (keeping `.t-page-title`, so it looks unchanged) to leave one
   `h1` per page. This partly reverses the bullet below: the detail page shows
-  the cart count again, though still not *Deliver to*.
-- **Where the delivery country can be set shrank with the flow bar.** Only the
-  catalogue's filter row still offers *Deliver to*.
-  Checkout shows the country under the submit button and in the address form
-  but cannot change it; the device detail page does not show it at all.
-- **The catalogue follows its own mockup.** The cart sits beside the page title
-  and *Deliver to* heads the filter row; the mockup dropped the BETA badge and
-  the *Which device is right for me?* link.
+  the cart count again, though never *Deliver to*.
+- **The delivery country can no longer be set anywhere.** It shrank with the
+  flow bar to the catalogue's controls row, and went entirely when the user had
+  that row removed. `state.country` keeps whatever is in `localStorage` —
+  `United Kingdom` on a fresh state or after *Reset prototype* — and in Phase 2
+  that fixes shipping and the tax band with it. Checkout still *shows* the
+  country under the submit button; the country field in its address form writes
+  `state.address.country`, the shipping label, not `state.country`. Putting the
+  choice back means either a control in the prototype bar or making that
+  address field drive `state.country`; the user has not asked for either. See
+  *Open items*.
+- **The catalogue follows its own mockup**, minus its controls row. The cart
+  sits beside the page title; the mockup dropped the BETA badge and the *Which
+  device is right for me?* link, and the user later dropped *Deliver to* and the
+  filter chips as well, so the page head is now followed straight by the grid.
+  `.atlas .controls` and `.atlas .filters` in `css/order.css` and `.atlas .chip`
+  in `css/atlas-components.css` are dead but kept, marked as such, so the row
+  can go back as it was.
 - **Checkout has a page title.** `<h1 class="t-page-title">Checkout</h1>` in
   the same `.page__head` the catalogue, Orders and the order summary use, on
   both the filled and the empty-cart screens.
@@ -381,17 +400,23 @@ open question in flow.md.
    `--color-icon-disabled` and the `--type-page-title-*` ramp. No frame in the
    Atlas file binds them, so `get_variable_defs` returns nothing; they are
    reasoned from neighbouring tokens. Needs a designer's eye.
-5. **Phases 1 and 2 have not been reviewed** by the user.
-6. **Phase 3** (payment plans) is untouched. See flow.md.
-7. **Failed payment is not modelled** — the simulated payment always succeeds,
+5. **Nothing can set the delivery destination.** Removing the catalogue's
+   controls row removed the only writer of `state.country`, so every order is
+   priced and shipped to the stored country and a reviewer cannot try another.
+   The tax and shipping tables are still wired and still work; only the way in
+   is gone. Worth a decision: a control in the prototype bar, the checkout
+   address field driving it, or leaving it fixed on purpose.
+6. **Phases 1 and 2 have not been reviewed** by the user.
+7. **Phase 3** (payment plans) is untouched. See flow.md.
+8. **Failed payment is not modelled** — the simulated payment always succeeds,
    and flow.md still lists the behaviour as an open question.
-8. **How Odin identifies a government entity is an open question.** The
+9. **How Odin identifies a government entity is an open question.** The
    prototype bar stands in for whatever that turns out to be — a flag on the
    merchant account, or a self-declared choice on the form.
-9. **Payout-deduction terms are not modelled.** The option names next calendar
-   month and the full amount; what happens to a merchant with no payout due,
-   and whether this survives into Phase 3, are both unanswered.
-10. flow.md lists **six open questions** that are still open — notably where
+10. **Payout-deduction terms are not modelled.** The option names next calendar
+    month and the full amount; what happens to a merchant with no payout due,
+    and whether this survives into Phase 3, are both unanswered.
+11. flow.md lists **six open questions** that are still open — notably where
     the flow is entered in real Odin, which users may order, and how the
     *In transit* update reaches Odin.
 
@@ -446,9 +471,11 @@ is ordering and the merchant type; *Reset prototype* clears `localStorage`.
 
 Phase 2:
 
-- Standard merchant: subtotal, shipping and tax add to a non-zero total, and
-  switching *Deliver to* changes shipping and the tax row (United States shows
-  *Varies by state* rather than an amount)
+- Standard merchant: subtotal, shipping and tax add to a non-zero total. The
+  destination can no longer be changed in the UI, so to exercise the other tax
+  bands — including the United States, which shows *Varies by state* rather
+  than an amount — edit `country` in `odin.deviceOrdering.v1` in devtools and
+  reload
 - submit is refused with empty card fields, and the first field takes focus
 - filling them and submitting shows *Processing payment…*, then a confirmation
   reading *Paid today … by card*
