@@ -5,15 +5,21 @@
    datasheets bundled with the victa-devices-datasheets skill. Hardware facts
    are Verifone's and must not be edited here.
 
-   PRICES ARE PLACEHOLDERS pending the real figures — change UNIT_PRICES below.
+   UNIT_PRICES are the user's own figures. The shipping and tax tables below
+   are still invented — see the notes on each.
    ========================================================================== */
 
-const CURRENCY = { code: 'GBP', symbol: '£' };
+/* USD, chosen with the unit prices the user supplied. One currency for every
+   destination is the same simplification as before, only in dollars: the
+   shipping rates and the VAT / GST labels below were written against sterling
+   and have not been reworked, so a UK order reads VAT in dollars. */
+const CURRENCY = { code: 'USD', symbol: '$' };
 
-/* PLACEHOLDER — awaiting real prices. */
+/* Supplied by the user, replacing the placeholders. The other money below —
+   shipping and tax — is still invented. */
 const UNIT_PRICES = {
-  'victa-portable': 299.00,
-  'victa-mobile': 249.00
+  'victa-portable': 522.17,
+  'victa-mobile': 549.63
 };
 
 /* Every Phase 1 order is 100% discounted while the ordering flow is in beta,

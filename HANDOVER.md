@@ -34,6 +34,9 @@ before changing anything there.
 
 Most recent round of changes, in order:
 
+- **The device prices are the user's real figures** — Victa Portable 522.17,
+  Victa Mobile 549.63 — **and the currency moved from GBP to USD** with them.
+  Shipping and tax are still invented; see *Open items*.
 - **The sidebar collapses.** Its collapse button now works on every page that
   draws the shell, toggling to a 72px icons-only rail and back. The preference
   is remembered — see the bullet in *Decisions*.
@@ -397,9 +400,9 @@ open question in flow.md.
 
 ## Open items
 
-1. **Prices, tax and shipping are all placeholders.** `UNIT_PRICES`,
-   `TAX_RATES` and `SHIPPING_RATES` at the top of `js/devices-catalogue.js` are
-   invented. The user has the real prices.
+1. **Tax and shipping are placeholders; the unit prices are not.**
+   `UNIT_PRICES` at the top of `js/devices-catalogue.js` are the user's own
+   figures. `TAX_RATES` and `SHIPPING_RATES` beside them are still invented.
 
    The tax table especially is a simplification that should not be mistaken for
    a calculation: it is one flat rate per country. Real figures do not work that
@@ -408,8 +411,19 @@ open question in flow.md.
    rather than being a national rate (which is why the US row shows *Varies by
    state* instead of an amount), and an EU B2B supply may be reverse-charged to
    the customer. The checkout says on screen that the rates are indicative.
-   Everything is priced in GBP regardless of destination, which is a further
-   simplification.
+   Everything is priced in **USD** regardless of destination, which is a
+   further simplification — and one that now shows. The user supplied the unit
+   prices in dollars and chose USD when asked, but `SHIPPING_RATES` and the
+   VAT / GST labels were written against sterling and were not reworked, so a
+   United Kingdom order reads *VAT (20%)* and `$9.99` shipping. That was put to
+   the user with the figures spelled out and accepted. Changing it means
+   revisiting both tables; the currency itself is one line, `CURRENCY` in
+   `js/devices-catalogue.js`.
+
+   Orders already in `localStorage` keep the numbers they were placed with and
+   are re-rendered through the current symbol, so an order placed before this
+   change shows its old sterling amounts with a dollar sign. *Reset prototype*
+   clears them.
 2. **The modal scrim is invented.** Atlas publishes no scrim token, so
    `.atlas .modal` in `css/atlas-components.css` uses `--color-text-primary`
    (`#14141c`) at 50% — the ink the shadow tokens are mixed from. Same standing
@@ -533,7 +547,7 @@ Phase 2:
 
 Phase 1 — it must still behave exactly as it did before Phase 2 existed:
 
-- the 100% discount, *Free during beta* shipping, a £0.00 payment total, and no
+- the 100% discount, *Free during beta* shipping, a $0.00 payment total, and no
   payment section anywhere
 - the merchant type control in the bar is disabled and reads *Phase 2 only*
 
@@ -554,6 +568,9 @@ And as before:
 - removing the last line in the dialog leaves the checkout on its empty state
 - quantity changes update line totals; the BETA discount always brings the
   payment total to 0.00
+- every amount on every screen carries a `$` and none a `£` — the catalogue,
+  the detail page, the checkout, the Cart dialog, the orders table and the
+  summaries all format through `money()`
 - submit is blocked with an empty cart, and in ops mode until a merchant is set
 - the address edit → confirm round-trip works and the edited address reaches the
   order
