@@ -41,6 +41,7 @@
 .atlas .ms--secondary { color: var(--color-icon-secondary); }
 .atlas .ms--brand { color: var(--color-icon-brand); }
 .atlas .ms--on-brand { color: var(--color-icon-on-brand); }
+.atlas .ms--success { color: var(--color-icon-success); }
 
 /* ---------- Type roles ---------- */
 
@@ -420,4 +421,47 @@
   padding: var(--space-padding-hero);
   background: var(--color-background-surface-sunken);
   border-top: var(--border-default) solid var(--color-border-default);
+}
+
+/* ==========================================================================
+   Toast
+
+   Atlas publishes no toast, so this is composed from tokens like the chip,
+   the stepper and the cart dialog above. It is NOT called `.toast`: Odin
+   publishes that class in css/styles.css, which the flow pages also load, and
+   an unscoped rule there would reach straight into this one.
+
+   Hidden with visibility as well as opacity, so it is neither clickable nor
+   read out while it is away. js/order.js owns the showing and the timer.
+   ========================================================================== */
+
+.atlas .flow-toast {
+  position: fixed;
+  right: var(--space-padding-page);
+  bottom: var(--space-padding-page);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: var(--space-gap-related);
+  max-width: 360px;
+  padding: var(--space-padding-item) var(--space-padding-surface);
+  border: var(--border-default) solid var(--color-border-success);
+  border-radius: var(--radius-default);
+  background: var(--color-background-success-subtle);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(var(--space-gap-group));
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms;
+}
+
+.atlas .flow-toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+/* The slide is decoration; the message is not. */
+@media (prefers-reduced-motion: reduce) {
+  .atlas .flow-toast { transition: opacity 180ms ease, visibility 180ms; transform: none; }
 }

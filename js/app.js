@@ -129,6 +129,11 @@ function render() {
 
   els.body.innerHTML = slice.map(renderRow).join('');
   els.empty.hidden = rows.length !== 0;
+  /* An empty table and a filter that matches nothing are different things to
+     say, and with no devices at all the filter wording would be misleading. */
+  els.empty.textContent = DEVICE_ROWS.length
+    ? 'No devices match these filters.'
+    : 'No devices yet.';
 
   els.viewing.textContent = rows.length
     ? 'Viewing ' + (from + 1) + ' - ' + (from + slice.length)

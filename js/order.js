@@ -22,9 +22,11 @@ const DEFAULT_STATE = {
                     sends a purchase order and invoice outside the platform.
      Phase 2 only — Phase 1 has no such branch and ignores this. */
   merchantType: 'standard',
-  /* 'card' | 'payout'. The CHOICE only: no card details are ever stored here,
-     or anywhere else in this prototype. See the payment section in
-     checkout.html. */
+  /* 'card' | 'payout'. No longer read: the checkout offers no choice, and
+     effectivePaymentMethod() returns 'card' for every standard merchant. Kept
+     so state saved before that change still loads cleanly, and because
+     flow.md has not retired the payout option. It never held card details —
+     the CHOICE only, as the payment section in checkout.html explains. */
   paymentMethod: 'card',
   /* 'merchant' = signed-in merchant ordering for themselves.
      'ops'      = internal operations ordering on a merchant's behalf, which
@@ -74,10 +76,16 @@ function isPhase2() { return state.phase === 2; }
 /* Phase 1 has no government branch, so the merchant type only bites in Phase 2. */
 function isGovernment() { return isPhase2() && state.merchantType === 'government'; }
 
-/* 'card' | 'payout' | 'invoice' — what the order will actually be settled by. */
+/* 'card' | 'invoice' — what the order will actually be settled by.
+
+   A standard merchant is always 'card': the payout option was removed from the
+   checkout, and reading state.paymentMethod here would let a 'payout' stored
+   before that change decide an order with no UI left to change it back.
+   'payout' can still arrive on an OLD order record, which is why the
+   confirmation in checkout.html still has a branch for it. */
 function effectivePaymentMethod() {
   if (!isPhase2()) return 'none';
-  return isGovernment() ? 'invoice' : state.paymentMethod;
+  return isGovernment() ? 'invoice' : 'card';
 }
 
 /* The payout a deduction would come out of: next calendar month. */
@@ -287,6 +295,45 @@ function cartButtonHtml() {
     '<span>Cart</span>' +
     '<span class="badge badge--neutral" id="flow-cart-count">' + cartCount() + '</span>' +
   '</a>';
+}
+
+/* ---------- Toast ----------
+   Atlas publishes no toast, so .atlas .flow-toast in css/atlas-components.css
+   is composed from tokens. One element is reused per page: a second message
+   replaces the first rather than stacking below it, and restarts the three
+   seconds.
+
+   role="status" announces it politely rather than interrupting — by the time
+   it appears the cart count beside the page title has already changed, so the
+   toast is confirmation and not the only signal. */
+
+let flowToastTimer;
+
+function showFlowToast(message) {
+  let toast = document.getElementById('flow-toast');
+
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'flow-toast';
+    toast.className = 'flow-toast';
+    toast.setAttribute('role', 'status');
+    /* Inside .atlas, or the component's scoped rules do not reach it. */
+    document.querySelector('.atlas').appendChild(toast);
+  }
+
+  toast.innerHTML =
+    '<span class="ms ms--success" aria-hidden="true">check_circle</span>' +
+    '<span>' + esc(message) + '</span>';
+
+  /* Replay the slide when a toast lands while one is already showing. */
+  toast.classList.remove('is-visible');
+  void toast.offsetWidth;
+  toast.classList.add('is-visible');
+
+  clearTimeout(flowToastTimer);
+  flowToastTimer = setTimeout(function () {
+    toast.classList.remove('is-visible');
+  }, 3000);
 }
 
 function renderFlowBar(mount, crumbs) {

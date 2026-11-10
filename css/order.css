@@ -211,6 +211,9 @@
    target. Selected takes the brand border and subtle wash the chip uses, so a
    chosen option reads the same way across the flow. */
 
+/* Dead since the card / payout choice came off the checkout — nothing renders
+   a .pay-option any more. Kept, like the .flowbar and .controls rules, so the
+   choice can be put back as it was. */
 .atlas .pay-options { display: flex; flex-direction: column; gap: var(--space-gap-related); margin-top: var(--space-gap-group); }
 
 .atlas .pay-option {

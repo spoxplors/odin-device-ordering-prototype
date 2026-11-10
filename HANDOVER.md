@@ -1,6 +1,6 @@
 # Handover — Odin device ordering POC
 
-Last updated: 3 November 2026
+Last updated: 10 November 2026
 
 Picking this up fresh: read this file top to bottom first. *Decisions already
 made* and *Gotchas worth knowing* are the two sections that will save you
@@ -12,7 +12,8 @@ covers the same ground in more detail for the Devices page and the flow.
 Four things exist and work:
 
 1. **The Odin Devices list page** (`devices.html`) — a static replica of the live
-   portal page, styled in Odin green.
+   portal page, styled in Odin green. Its table is deliberately empty; see
+   *Decisions*.
 2. **Phases 1 and 2 of the device ordering flow** — the same five screens on
    **Atlas** tokens in Xplor Pay purple, entered from the *Order devices* button
    on the Devices page. Which phase is live is a setting, not a separate set of
@@ -34,6 +35,17 @@ before changing anything there.
 
 Most recent round of changes, in order:
 
+- **Phase 2 lost three things on the user's instruction**: the beta callout on
+  the device detail page, the *order is placed once payment completes* callout
+  on the checkout, and the card / payout choice. A standard merchant now goes
+  straight to the card fields. Phase 1 and the government branch are untouched.
+- **Add to cart no longer leaves the device detail page.** It updates the cart
+  count in the page head and raises a toast instead of jumping to the
+  checkout. See the bullet in *Decisions*.
+- **The Devices table starts empty.** The 137 synthetic rows are no longer
+  generated, so the page opens on *No devices yet.* — the user wants the
+  prototype to begin before any device has been ordered. See the bullet in
+  *Decisions*, including the fact that ordering does not fill the table back in.
 - **The device prices are the user's real figures** — Victa Portable 522.17,
   Victa Mobile 549.63 — **and the currency moved from GBP to USD** with them.
   Shipping and tax are still invented; see *Open items*.
@@ -234,6 +246,29 @@ anything already crawled may persist in caches for a while.
   real user would flip mid-checkout. The business and merchant pickers stayed.
 - **Phase 2 has no separate review screen.** flow.md gives one; the user chose
   to put payment on the checkout page instead, so the checkout is the review.
+- **A standard merchant pays by card, with no choice offered.** The *Pay by
+  card* / *Deduct from next month's payout* radio pair came off the checkout on
+  the user's instruction, in both modes — the payment section is the heading
+  and the card fields. `payOption()` and the radio listener went with it, and
+  `.atlas .pay-options` / `.pay-option*` in `css/order.css` are dead but kept
+  and marked, so the choice can be put back as it was.
+  **`effectivePaymentMethod()` in `js/order.js` now returns `'card'` for every
+  non-government Phase 2 order rather than reading `state.paymentMethod`.**
+  That is deliberate and load-bearing: anyone who chose *payout* before this
+  change still has it in `localStorage`, with no UI left to change it back, and
+  reading the stored value would have sent them down a payout path with no card
+  fields. `state.paymentMethod` is now read nowhere; it is kept in
+  `DEFAULT_STATE` so older stored state still loads and because flow.md has not
+  retired the option. The confirmation's `order.paymentMethod === 'payout'`
+  branch stays live — orders **already placed** that way must still render.
+- **Phase 2 shows no callouts to a standard merchant.** The device detail
+  page's *Device ordering is in beta* callout is now Phase 1 only, which is
+  also a correction: it promises a 100% discount and that nothing is charged,
+  neither of which is true once Phase 2 is live. The checkout's *The order is
+  placed once payment completes* callout was removed outright, so
+  `headerCallout()` returns an empty string in that case — `.checkout__right`
+  is a flex column with a gap, so nothing is left behind. The Phase 1 callout
+  and the government one are untouched.
 - **A government entity never reaches a payment step.** The section is headed
   *Place order* rather than *Payment* and holds a single callout in place of
   the options, the submit button reads *Submit to sales rep*, and the order
@@ -297,6 +332,26 @@ anything already crawled may persist in caches for a while.
   last two it sits alongside a button going to the same place (*Browse
   devices*, *Order more devices*); the user asked for it there anyway, so that
   the way out is in the same spot on every screen.
+- **Add to cart stays on the device page.** It used to add the line and
+  redirect straight to `checkout.html`. On the user's instruction it now adds
+  the line, re-renders the cart button in the page head so the count moves, and
+  raises a toast reading *Device(s) have been added to your cart* that dismisses
+  itself after three seconds. Reaching the checkout is the cart button's job
+  now, exactly as it is on the catalogue — so adding two different devices no
+  longer means navigating back and forth.
+- **The toast is composed, and is deliberately not called `.toast`.** Atlas
+  publishes no toast, so `.atlas .flow-toast` in `css/atlas-components.css` is
+  built from tokens like the chip, the stepper and the cart dialog — success
+  subtle background, success border, `check_circle` in icon/success. Odin
+  publishes an unscoped `.toast` in `css/styles.css` that the flow pages also
+  load, and naming this one `.toast` would have walked straight into the
+  leakage trap described above, so it has its own name.
+  `showFlowToast()` in `js/order.js` owns it: one element per page, reused, so
+  a second message replaces the first and restarts the three seconds rather
+  than stacking. It is hidden with `visibility` as well as `opacity`, so it is
+  neither clickable nor read out while away, carries `role="status"` to be
+  announced politely, and its slide is dropped under
+  `prefers-reduced-motion: reduce`. Nothing else calls it yet.
 - **The device detail page repeats the catalogue's page head.** Same
   `.page__head`, same *Order Devices* title, same cart button filled by
   `cartButtonHtml()` — so the title and the cart stay put as you move between
@@ -321,6 +376,23 @@ anything already crawled may persist in caches for a while.
   `.atlas .controls` and `.atlas .filters` in `css/order.css` and `.atlas .chip`
   in `css/atlas-components.css` are dead but kept, marked as such, so the row
   can go back as it was.
+- **The Devices table is empty on purpose, in every phase.** `DEVICE_ROWS` in
+  `js/data.js` is now `buildDevices(0)` rather than `buildDevices(137)`: the
+  user asked for the previous devices to be gone before any are ordered. The
+  generator is untouched, so putting a count back restores them, and nothing
+  else broke — the filter panel is built from `STATUSES`, `MODELS` and
+  `DEVICE_BUSINESSES`, not from the rows, so it still offers 5 statuses, 10
+  models and 7 businesses against an empty table. Pagination reads *Viewing
+  0 - 0* with both buttons disabled, and an export writes a header-only CSV.
+  The request named `devices.html?phase=1`, but the table has never known
+  anything about phases and making it phase-dependent would be strange, so it
+  is empty in both.
+  **Ordering does not fill it back in.** Submitted orders live in
+  `state.orders` under `odin.deviceOrdering.v1`; this table renders
+  `DEVICE_ROWS` from `js/data.js`, and `js/app.js` is wrapped in an IIFE whose
+  own `state` shadows the ordering module's. Nothing connects the two, so the
+  table stays empty however many orders are placed. Wiring an order's lines
+  into it as new rows is a real piece of work and nobody has asked for it yet.
 - **The collapsed sidebar is remembered, under its own key.** Every page is
   its own document, so a collapse held only in memory would undo itself on the
   first nav click — the user asked for the button to work, and across a
@@ -453,9 +525,13 @@ open question in flow.md.
 9. **How Odin identifies a government entity is an open question.** The
    prototype bar stands in for whatever that turns out to be — a flag on the
    merchant account, or a self-declared choice on the form.
-10. **Payout-deduction terms are not modelled.** The option names next calendar
-    month and the full amount; what happens to a merchant with no payout due,
-    and whether this survives into Phase 3, are both unanswered.
+10. **Payout deduction is no longer offered, and was never modelled.** The
+    user had the option removed from the checkout, so the only way to pay in
+    Phase 2 is by card. The code behind it is still there — `nextPayoutMonth()`,
+    the confirmation branch, the CSS — because orders placed before the change
+    must still render. If it ever comes back, the questions it left are
+    unchanged: what happens to a merchant with no payout due, and whether it
+    survives into Phase 3. flow.md still lists it.
 11. flow.md lists **six open questions** that are still open — notably where
     the flow is entered in real Odin, which users may order, and how the
     *In transit* update reaches Odin.
@@ -529,8 +605,13 @@ Phase 2:
 - submit is refused with empty card fields, and the first field takes focus
 - filling them and submitting shows *Processing payment…*, then a confirmation
   reading *Paid today … by card*
-- the payout option hides the card fields, and its confirmation says the amount
-  comes out of next month's payout
+- there is no payment choice to make: the Payment card is the heading and the
+  four card fields, with no radio pair above them — in **both** Merchant and
+  Internal ops. Seed `paymentMethod: 'payout'` into
+  `odin.deviceOrdering.v1` by hand and the card fields must still appear and
+  the order must still land as `card`
+- neither the device detail page nor the checkout shows a callout in Phase 2
+  for a standard merchant; in Phase 1 the detail page's beta callout is back
 - **nothing from the card fields reaches `localStorage`** — check
   `odin.deviceOrdering.v1` in devtools straight after a card submit; the order
   should carry `paymentMethod` and nothing else about payment
@@ -555,12 +636,21 @@ Both phases:
 
 - the orders table and the order summaries render Phase 1 and Phase 2 orders
   side by side without either looking broken
+- the Devices table shows *No devices yet.* with *Viewing 0 - 0*, both
+  pagination buttons disabled, and the filter panel still fully populated —
+  and it reads the same in Phase 2. The wording switches back to *No devices
+  match these filters.* only if `DEVICE_ROWS` is given rows again
 - the bar appears on all six pages, `devices.html` included, but not on
   `index.html` — and the Devices table, its filters, sorting and
   export still work, which is what the `js/app.js` IIFE protects
 
 And as before:
 
+- adding to cart from a detail page keeps you on that page: the count in the
+  cart button goes up, the toast slides in at the bottom right and is gone
+  about three seconds later, and the URL does not change. Adding again while
+  it is still showing restarts the three seconds instead of stacking a second
+  toast. The cart button is then the way to the checkout
 - adding to cart from a detail page survives navigation to checkout
 - *Edit order* on checkout opens the Cart dialog; + / − and the remove button
   change the cart, the subtotal keeps up, Escape and the scrim close it, and

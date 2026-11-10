@@ -214,17 +214,6 @@ function cardFieldsBlock() {
   '</div>';
 }
 
-function payOption(value, title, text, selected) {
-  return '<label class="pay-option' + (selected ? ' is-selected' : '') + '">' +
-    '<input class="pay-option__radio" type="radio" name="pay-method" value="' + value + '"' +
-      (selected ? ' checked' : '') + '>' +
-    '<span class="pay-option__body">' +
-      '<span class="pay-option__title">' + title + '</span>' +
-      '<span class="pay-option__text">' + text + '</span>' +
-    '</span>' +
-  '</label>';
-}
-
 function paymentBlock(t) {
   /* A government entity pays nothing in Odin, so there is no payment step at
      all — flow.md Phase 2, step 3. */
@@ -241,17 +230,13 @@ function paymentBlock(t) {
     '</section>';
   }
 
-  const card = state.paymentMethod !== 'payout';
-
+  /* Card only. The Pay by card / Deduct from next month's payout choice was
+     removed on the user's instruction, so a standard merchant goes straight to
+     the card fields. effectivePaymentMethod() in js/order.js is what makes a
+     'payout' left in stored state harmless. */
   return '<section class="card">' +
     '<h2 class="t-card-title">Payment</h2>' +
-    '<div class="pay-options" role="radiogroup" aria-label="Payment method">' +
-      payOption('card', 'Pay by card',
-        'Charged when you submit this order.', card) +
-      payOption('payout', 'Deduct from next month\u2019s payout',
-        esc(money(t.total)) + ' comes out of your ' + esc(nextPayoutMonth()) + ' payout.', !card) +
-    '</div>' +
-    (card ? cardFieldsBlock() : '') +
+    cardFieldsBlock() +
   '</section>';
 }
 
@@ -280,14 +265,10 @@ function headerCallout(t) {
     '</div>';
   }
 
-  return '<div class="callout callout--info">' +
-    '<span class="ms" aria-hidden="true">info</span>' +
-    '<span class="callout__body">' +
-      '<span class="callout__title">The order is placed once payment completes</span>' +
-      '<span class="callout__text">Operations is emailed after that, and fulfils the order ' +
-      'outside Odin.</span>' +
-    '</span>' +
-  '</div>';
+  /* Phase 2, standard merchant: nothing. The callout that stood here was
+     removed on the user's instruction. `.checkout__right` is a flex column
+     with a gap, so an empty string leaves no hole. */
+  return '';
 }
 
 function submitLabel() {
@@ -385,15 +366,6 @@ function renderCheckout() {
 function wireCheckout() {
   const byId = function (id) { return document.getElementById(id); };
 
-  view.querySelectorAll('[name="pay-method"]').forEach(function (r) {
-    r.addEventListener('change', function () {
-      state.paymentMethod = r.value;
-      cardError = false;
-      commit();
-      renderCheckout();
-    });
-  });
-
   const pickBusiness = byId('pick-business');
   if (pickBusiness) {
     pickBusiness.addEventListener('change', function () {
@@ -456,7 +428,7 @@ function wireCheckout() {
 
     /* Read once, check, discard. The values are never assigned anywhere that
        outlives this function. */
-    if (isPhase2() && !isGovernment() && state.paymentMethod === 'card') {
+    if (isPhase2() && !isGovernment()) {
       const filled = CARD_FIELDS.every(function (f) {
         const el = byId(f.id);
         return el && el.value.trim() !== '';
@@ -476,8 +448,7 @@ function wireCheckout() {
        payment is still an open question in the spec. */
     if (isPhase2() && !isGovernment()) {
       submit.disabled = true;
-      submit.textContent = state.paymentMethod === 'card'
-        ? 'Processing payment…' : 'Scheduling deduction…';
+      submit.textContent = 'Processing payment…';
       setTimeout(function () { renderConfirmation(submitOrder()); }, 1200);
       return;
     }

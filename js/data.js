@@ -112,4 +112,9 @@ function buildDevices(count) {
   return rows;
 }
 
-const DEVICE_ROWS = buildDevices(137);
+/* The table starts empty. The prototype's story is a business ordering its
+   first devices, so the 137 synthetic rows that used to fill this page are not
+   generated. buildDevices() is kept intact — put a count back here to restore
+   them. Nothing else depends on the rows: the filter panel is built from
+   STATUSES, MODELS and DEVICE_BUSINESSES, not from what is in the table. */
+const DEVICE_ROWS = buildDevices(0);
