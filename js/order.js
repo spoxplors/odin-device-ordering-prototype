@@ -11,7 +11,14 @@ const STORE_KEY = 'odin.deviceOrdering.v1';
 
 const DEFAULT_STATE = {
   cart: {},
-  country: 'United Kingdom',
+  /* 'US' | 'CA' — the region being ordered in, and the prototype's single
+     delivery destination. It decides which devices are on offer, which
+     currency they are priced in, and what the shipping address looks like.
+     It replaced a free-standing `country`, which had had no control since the
+     catalogue's controls row was removed. State saved before this change
+     still carries that `country`; it is ignored, and the region defaults to
+     the United States so nothing renders empty. */
+  region: 'US',
   /* 1 = ordering form only, nothing charged.
      2 = payment added: real totals, and a card / payout choice unless the
          merchant is a government entity.
@@ -34,6 +41,7 @@ const DEFAULT_STATE = {
   mode: 'merchant',
   business: 'Clubessential',
   merchant: 'Clubessential',
+  /* null = use the business's address on file for the current region. */
   address: null,
   contact: { recipient: '', email: '', phone: '' },
   orders: []
@@ -72,6 +80,37 @@ function commit() { saveState(state); }
 })();
 
 function isPhase2() { return state.phase === 2; }
+
+/* ---------- Region ---------- */
+
+/* The whole record, not the code: callers want its currency, tax band,
+   shipping rate and address labels as often as its name. */
+function currentRegion() { return regionOf(state.region); }
+
+/* Switching region changes what is for sale, so the cart cannot survive it —
+   every device belongs to exactly one region and a Victa in a Canadian order
+   is a thing the real product could never produce. The address goes too: it
+   is the business's address for the old region, in the old region's format,
+   and keeping it would put a US state in a Canadian form.
+
+   Placed orders go with them, on the same reasoning and at the user's
+   instruction: a reviewer in one region must not be able to read orders from
+   the other, and Orders, the order summaries and the Devices table all read
+   from the same place. Clearing is what the user asked for over filtering, so
+   switching region DISCARDS every order placed before it — there is no
+   undo, and a region switch is as destructive as Reset prototype for them.
+   That is why `money()` still takes a region per order: an order can outlive
+   a switch inside one page's lifetime, and the confirmation screen is still
+   on screen when the bar is used. */
+function setRegion(code) {
+  const next = regionOf(code).code;
+  if (next === state.region) return;
+  state.region = next;
+  state.cart = {};
+  state.address = null;
+  state.orders = [];
+  commit();
+}
 
 /* Phase 1 has no government branch, so the merchant type only bites in Phase 2. */
 function isGovernment() { return isPhase2() && state.merchantType === 'government'; }
@@ -114,7 +153,8 @@ function businessByName(name) {
    overridden once the user edits it (flow.md Phase 1, step 2). */
 function currentAddress() {
   if (state.address) return state.address;
-  return Object.assign({}, businessByName(state.business).address);
+  const addresses = businessByName(state.business).addresses;
+  return Object.assign({}, addresses[currentRegion().code] || addresses.US);
 }
 
 function resetAddressToBusiness() {
@@ -124,8 +164,10 @@ function resetAddressToBusiness() {
 
 /* ---------- Cart ---------- */
 
+/* Both of these read the region's devices rather than all of them, so a cart
+   entry that somehow outlived a region switch cannot be counted or charged. */
 function cartLines() {
-  return DEVICES
+  return devicesForRegion(state.region)
     .filter(function (d) { return (state.cart[d.id] || 0) > 0; })
     .map(function (d) {
       const qty = state.cart[d.id];
@@ -134,7 +176,7 @@ function cartLines() {
 }
 
 function cartCount() {
-  return DEVICES.reduce(function (n, d) { return n + (state.cart[d.id] || 0); }, 0);
+  return devicesForRegion(state.region).reduce(function (n, d) { return n + (state.cart[d.id] || 0); }, 0);
 }
 
 function setQty(deviceId, qty) {
@@ -181,8 +223,8 @@ function totals() {
   }
 
   /* Nothing in the cart means nothing to ship, so the flat rate stays off. */
-  const shipping = lines.length ? shippingFor(state.country) : 0;
-  const band = taxFor(state.country);
+  const shipping = lines.length ? shippingFor(state.region) : 0;
+  const band = taxFor(state.region);
   const tax = (subtotal + shipping) * band.rate;
 
   return {
@@ -218,7 +260,10 @@ function submitOrder() {
     merchant: state.merchant,
     merchantType: isPhase2() ? state.merchantType : 'standard',
     paymentMethod: method,
-    country: state.country,
+    /* The region is recorded so this order keeps its own currency when it is
+       re-read after the prototype has been switched to the other region. */
+    region: state.region,
+    country: currentRegion().country,
     address: currentAddress(),
     contact: Object.assign({}, state.contact),
     lines: t.lines.map(function (l) {
@@ -259,35 +304,16 @@ function formatPlaced(iso) {
 /* ==========================================================================
    Shared flow controls.
 
-   The catalogue lays these out itself — the cart beside the page title, the
-   delivery destination at the head of the filter row — so each control is a
-   separate piece. renderFlowBar() composes them, with a breadcrumb, for the
-   screens deeper in the flow, which still need a trail back.
+   The catalogue lays the cart out itself, beside the page title, so the
+   control is a separate piece. renderFlowBar() composed it with a breadcrumb
+   for the screens deeper in the flow; nothing calls it any more.
    ========================================================================== */
 
-function deliverToHtml() {
-  const options = COUNTRIES.map(function (c) {
-    return '<option' + (c === state.country ? ' selected' : '') + '>' + esc(c) + '</option>';
-  }).join('');
-
-  return '<label class="deliver">' +
-    '<span class="t-secondary">Deliver to</span>' +
-    '<span class="input deliver__select">' +
-      '<select id="flow-country" aria-label="Delivery destination">' + options + '</select>' +
-      '<span class="ms ms--secondary" aria-hidden="true">keyboard_arrow_down</span>' +
-    '</span>' +
-  '</label>';
-}
-
-/* Call once the markup from deliverToHtml() is in the document. */
-function bindDeliverTo() {
-  const select = document.getElementById('flow-country');
-  select.addEventListener('change', function () {
-    state.country = select.value;
-    commit();
-    document.dispatchEvent(new CustomEvent('flow:country'));
-  });
-}
+/* deliverToHtml() and bindDeliverTo() used to live here — a Deliver to select
+   over COUNTRIES, last seen in the catalogue's controls row. The region in the
+   prototype bar is the delivery destination now, so both they and COUNTRIES
+   are gone rather than left dead: two competing destinations would be worse
+   than none. git history has them if the control is ever wanted back. */
 
 function cartButtonHtml() {
   return '<a class="btn btn--secondary" href="checkout.html">' +
@@ -349,9 +375,6 @@ function renderFlowBar(mount, crumbs) {
     '<div class="flowbar__left">' + trail +
       '<span class="badge badge--brand flowbar__beta">BETA</span>' +
     '</div>' +
-    '<div class="flowbar__middle">' + deliverToHtml() + '</div>' +
     '<div class="flowbar__right">' + cartButtonHtml() + '</div>';
-
-  bindDeliverTo();
 }
 

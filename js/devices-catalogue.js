@@ -1,25 +1,109 @@
 /* ==========================================================================
-   Phase 1 device catalogue — Victa Portable and Victa Mobile.
+   Device catalogue, regions and money.
 
-   Device renders, headlines, intros and specs come from the Verifone Victa
-   datasheets bundled with the victa-devices-datasheets skill. Hardware facts
-   are Verifone's and must not be edited here.
+   The prototype sells into two regions and they do not overlap: the United
+   States gets the two Verifone Victa devices in USD, Canada gets the two
+   Ingenico devices in CAD. A device belongs to exactly one region, which is
+   why its price needs no currency of its own — the region supplies it.
 
-   UNIT_PRICES are the user's own figures. The shipping and tax tables below
-   are still invented — see the notes on each.
+   Victa renders, headlines, intros and specs come from the Verifone Victa
+   datasheets bundled with the victa-devices-datasheets skill. The Link/2500
+   and Lane/3600 come from the Ingenico datasheets the user supplied. Hardware
+   facts belong to those manufacturers and must not be edited here. Where a
+   value could not be read out of a datasheet it is left out rather than
+   guessed — see the notes on each device.
+
+   UNIT_PRICES are the user's own figures. Shipping and tax are invented; see
+   the notes on each.
    ========================================================================== */
 
-/* USD, chosen with the unit prices the user supplied. One currency for every
-   destination is the same simplification as before, only in dollars: the
-   shipping rates and the VAT / GST labels below were written against sterling
-   and have not been reworked, so a UK order reads VAT in dollars. */
-const CURRENCY = { code: 'USD', symbol: '$' };
+/* The region replaces the old per-country delivery destination. It decides
+   three things at once — which devices are on offer, which currency they are
+   priced in, and what the shipping address looks like — so it is the one
+   setting a reviewer changes in the prototype bar.
 
-/* Supplied by the user, replacing the placeholders. The other money below —
-   shipping and tax — is still invented. */
+   `tax.rate` applies to the subtotal plus shipping. `tax.note` replaces the
+   amount in the UI where a rate cannot honestly be given, which is why the
+   United States shows wording rather than a figure.
+
+   PLACEHOLDER, both of them: `shipping` is a flat invented charge per order,
+   not per device and not carrier-derived, and the tax treatment is a
+   simplification rather than a calculation. US sales tax is set by state and
+   turns on nexus, so no national rate exists to show. Canadian GST at 5% is
+   federal and does apply everywhere, but provincial PST, and the provinces on
+   HST, add more on top and are not modelled. The checkout says on screen that
+   the rates are indicative. */
+const REGIONS = {
+  US: {
+    code: 'US',
+    label: 'United States',
+    country: 'United States',
+    currency: { code: 'USD', symbol: '$' },
+    shipping: 19.99,
+    tax: { rate: 0, label: 'Sales tax', note: 'Varies by state' },
+    /* What the shipping address calls its two variable fields, and the list
+       behind the subdivision picker. */
+    subdivisionLabel: 'State',
+    postcodeLabel: 'ZIP code',
+    postcodePlaceholder: '94107',
+    subdivisions: [
+      ['AL', 'Alabama'], ['AK', 'Alaska'], ['AZ', 'Arizona'], ['AR', 'Arkansas'],
+      ['CA', 'California'], ['CO', 'Colorado'], ['CT', 'Connecticut'], ['DE', 'Delaware'],
+      ['DC', 'District of Columbia'], ['FL', 'Florida'], ['GA', 'Georgia'], ['HI', 'Hawaii'],
+      ['ID', 'Idaho'], ['IL', 'Illinois'], ['IN', 'Indiana'], ['IA', 'Iowa'],
+      ['KS', 'Kansas'], ['KY', 'Kentucky'], ['LA', 'Louisiana'], ['ME', 'Maine'],
+      ['MD', 'Maryland'], ['MA', 'Massachusetts'], ['MI', 'Michigan'], ['MN', 'Minnesota'],
+      ['MS', 'Mississippi'], ['MO', 'Missouri'], ['MT', 'Montana'], ['NE', 'Nebraska'],
+      ['NV', 'Nevada'], ['NH', 'New Hampshire'], ['NJ', 'New Jersey'], ['NM', 'New Mexico'],
+      ['NY', 'New York'], ['NC', 'North Carolina'], ['ND', 'North Dakota'], ['OH', 'Ohio'],
+      ['OK', 'Oklahoma'], ['OR', 'Oregon'], ['PA', 'Pennsylvania'], ['RI', 'Rhode Island'],
+      ['SC', 'South Carolina'], ['SD', 'South Dakota'], ['TN', 'Tennessee'], ['TX', 'Texas'],
+      ['UT', 'Utah'], ['VT', 'Vermont'], ['VA', 'Virginia'], ['WA', 'Washington'],
+      ['WV', 'West Virginia'], ['WI', 'Wisconsin'], ['WY', 'Wyoming']
+    ]
+  },
+  CA: {
+    code: 'CA',
+    label: 'Canada',
+    country: 'Canada',
+    currency: { code: 'CAD', symbol: '$' },
+    shipping: 24.99,
+    tax: { rate: 0.05, label: 'GST (5%)', note: null },
+    subdivisionLabel: 'Province',
+    postcodeLabel: 'Postal code',
+    postcodePlaceholder: 'M5V 2T6',
+    subdivisions: [
+      ['AB', 'Alberta'], ['BC', 'British Columbia'], ['MB', 'Manitoba'],
+      ['NB', 'New Brunswick'], ['NL', 'Newfoundland and Labrador'],
+      ['NT', 'Northwest Territories'], ['NS', 'Nova Scotia'], ['NU', 'Nunavut'],
+      ['ON', 'Ontario'], ['PE', 'Prince Edward Island'], ['QC', 'Quebec'],
+      ['SK', 'Saskatchewan'], ['YT', 'Yukon']
+    ]
+  }
+};
+
+const REGION_CODES = ['US', 'CA'];
+
+/* Everything that formats money or prices an order goes through here, so an
+   unknown code can never leave a page half-rendered. */
+function regionOf(code) {
+  return REGIONS[code] || REGIONS.US;
+}
+
+/* The region currently being ordered in. js/order.js owns `state` and loads
+   after this file, so the guard covers the window before it exists — and the
+   Devices page, which loads this file for the prototype bar alone. */
+function currentRegionCode() {
+  return typeof state !== 'undefined' && state.region ? state.region : 'US';
+}
+
+/* Supplied by the user. Each price is in its own region's currency: the two
+   Victa devices in USD, the two Ingenico devices in CAD. */
 const UNIT_PRICES = {
   'victa-portable': 522.17,
-  'victa-mobile': 549.63
+  'victa-mobile': 549.63,
+  'link-2500-le': 400,
+  'lane-3600': 400
 };
 
 /* Every Phase 1 order is 100% discounted while the ordering flow is in beta,
@@ -27,47 +111,18 @@ const UNIT_PRICES = {
    total, which is why this is applied per phase rather than globally. */
 const BETA_DISCOUNT_RATE = 1;
 
-/* PLACEHOLDER — invented, like UNIT_PRICES above, and not a tax calculation.
-
-   A single flat rate per country is a deliberate simplification so the Phase 2
-   totals have something to show. Real figures do not work this way: UK and
-   Irish VAT are different rates, Australian and New Zealand GST are different
-   rates again, US sales tax is set by state and depends on nexus rather than
-   being a national rate at all, and an EU B2B supply may be reverse-charged to
-   the customer instead. The checkout says on screen that these are indicative.
-
-   `rate` applies to the subtotal plus shipping. `note` replaces the amount in
-   the UI where a rate cannot honestly be given. */
-const TAX_RATES = {
-  'United Kingdom': { rate: 0.20, label: 'VAT (20%)' },
-  'Ireland':        { rate: 0.23, label: 'VAT (23%)' },
-  'Australia':      { rate: 0.10, label: 'GST (10%)' },
-  'New Zealand':    { rate: 0.15, label: 'GST (15%)' },
-  'United States':  { rate: 0,    label: 'Sales tax', note: 'Varies by state' }
-};
-
-/* PLACEHOLDER — invented. A flat charge per order, not per device, and not
-   weight- or carrier-derived. */
-const SHIPPING_RATES = {
-  'United Kingdom':  9.99,
-  'Ireland':        14.99,
-  'Australia':      19.99,
-  'New Zealand':    24.99,
-  'United States':  19.99
-};
-
-function taxFor(country) {
-  return TAX_RATES[country] || { rate: 0, label: 'Tax', note: 'Not calculated' };
+function taxFor(regionCode) {
+  return regionOf(regionCode).tax;
 }
 
-function shippingFor(country) {
-  const rate = SHIPPING_RATES[country];
-  return rate === undefined ? 0 : rate;
+function shippingFor(regionCode) {
+  return regionOf(regionCode).shipping;
 }
 
 const DEVICES = [
   {
     id: 'victa-portable',
+    region: 'US',
     name: 'Victa Portable',
     image: 'assets/devices/victa/victa-portable.png',
     tagline: 'Easily accept payments anywhere and of any type, all on a single device.',
@@ -87,6 +142,7 @@ const DEVICES = [
   },
   {
     id: 'victa-mobile',
+    region: 'US',
     name: 'Victa Mobile',
     image: 'assets/devices/victa/victa-mobile.png',
     tagline: 'Personalize the in-store experience with checkout and operations — all in the palm of your hand.',
@@ -103,55 +159,151 @@ const DEVICES = [
     ],
     accessories: ['Victa Mobile', 'Charger'],
     useCases: 'In-store, on the go'
+  },
+  {
+    /* Ingenico Link/2500 Companion LE. Specs are from the supplied datasheet,
+       which gives four columns — Slim and Standard, two each — without saying
+       which the LE is. Size, weight and battery are therefore given as the
+       range the datasheet covers rather than pinned to one column. */
+    id: 'link-2500-le',
+    region: 'CA',
+    name: 'Link 2500 LE',
+    image: 'assets/devices/ingenico/link-2500-le.webp',
+    /* The render is a product shot on white rather than a cut-out, so it is
+       multiplied onto the sunken image box — see css/order.css. */
+    imageOnWhite: true,
+    tagline: 'Your smart, sleek and simple payments solution.',
+    intro: 'Link/2500 brings payment acceptance to any mobile business. Pocket-sized, light and robust, it makes a complete acceptance point wherever the sale happens, with Bluetooth and Wi-Fi, improved power management and support for multiple alternative payment methods.',
+    chips: ['Wi-Fi', 'Bluetooth', 'Contactless', 'Chip & PIN', 'Magstripe'],
+    specs: [
+      ['Operating system', 'Telium TETRA'],
+      ['Memory', '256 MB RAM / 256 MB Flash'],
+      ['Card readers', 'Contactless (ISO 14443), smart card (EMV Level 1, 50K lifespan), magstripe (ISO 1/2/3, 100K lifespan)'],
+      ['Display', '2.4" colour display, backlit, QVGA (240x320 pixels)'],
+      ['Keypad', 'Mechanical, 20 keys, raised marking'],
+      ['Connectivity', 'Bluetooth, Wi-Fi (dual band), LAN, Apple IAP chip'],
+      ['Connections', 'USB Type-C, host and slave (3K insertions)'],
+      ['Battery', 'Li-ion, 600–1200 mAh depending on model (1200 mAh removable)'],
+      ['Security', 'PCI PTS 6.x online'],
+      ['Size and weight', '129 x 70 x 13–17 mm (5.07 x 2.75 x 0.51–0.67"), 120–155 g']
+    ],
+    accessories: ['Link 2500 LE', 'USB A to USB C cable (1.5m)'],
+    useCases: 'In-store, on the go'
+  },
+  {
+    /* Ingenico Lane/3600. The supplied datasheet's specification table is set
+       in a subset-embedded font that could not be read on this machine, so the
+       rows below come from the parts of the datasheet that did read — the
+       feature copy. Display size, dimensions, weight, connectivity and the
+       in-box contents are missing rather than guessed; see HANDOVER.md. */
+    id: 'lane-3600',
+    region: 'CA',
+    name: 'Lane 3600',
+    image: 'assets/devices/ingenico/lane-3600.webp',
+    imageOnWhite: true,
+    tagline: 'Fast, secure and compact PIN pad solution.',
+    intro: 'A compact PIN pad built for easy self-checkout and for semi-attended kiosks. Lane/3600 accepts every payment method through a single, easy-to-identify contactless zone, and its optimised dimensions and adaptation plate make it straightforward to integrate.',
+    chips: ['Contactless', 'Chip & PIN', 'Magstripe', 'QR code reader'],
+    specs: [
+      ['Processor', 'High speed Cortex A7'],
+      ['Memory', 'Up to 512 MB RAM / 256 MB Flash'],
+      ['Payment types', 'All payment methods, through one easy-to-identify contactless reader with an extended contactless zone'],
+      ['Camera', 'Fully integrated 0.3 MP rear camera, with fast QR code reading'],
+      ['Display', 'Glass lens, with high-performance card and swipe insertion'],
+      ['Security', 'PCI PTS v6, detection of abnormal cable removal, secured lock receptacle'],
+      ['Integration', 'Optimised dimensions and adaptation plate for semi-attended kiosks']
+    ],
+    accessories: ['Lane 3600'],
+    useCases: 'Counter, self-checkout'
   }
 ].map(function (d) {
   d.price = UNIT_PRICES[d.id];
   return d;
 });
 
-/* Shipping destinations — the markets Xplor operates in. */
-const COUNTRIES = ['Australia', 'New Zealand', 'United Kingdom', 'United States', 'Ireland'];
+/* The catalogue and the cart only ever see one region's devices. deviceById()
+   deliberately searches all of them, so a device on an order placed in the
+   other region still resolves when that order is rendered. */
+function devicesForRegion(regionCode) {
+  const code = regionOf(regionCode).code;
+  return DEVICES.filter(function (d) { return d.region === code; });
+}
 
 /* Stand-in for an authorised, tenant-scoped API response. No real merchant or
-   customer data belongs in this file. */
+   customer data belongs in this file — every business, address and postcode
+   below is invented. Each business has one address per region, because the
+   region is the delivery destination and an address has to match it. */
 const BUSINESSES = [
   {
     name: 'Clubessential',
     merchants: ['Clubessential', 'Clubessential Golf', 'CE Hospitality'],
-    address: {
-      company: 'Clubessential Holdings',
-      line1: '18 Finsbury Circus',
-      line2: '',
-      city: 'London',
-      region: '',
-      postcode: 'EC2M 7EB',
-      country: 'United Kingdom'
+    addresses: {
+      US: {
+        company: 'Clubessential Holdings',
+        line1: '2200 Market Street',
+        line2: 'Suite 900',
+        city: 'Cincinnati',
+        region: 'OH',
+        postcode: '45202',
+        country: 'United States'
+      },
+      CA: {
+        company: 'Clubessential Holdings Canada',
+        line1: '150 King Street West',
+        line2: 'Suite 2100',
+        city: 'Toronto',
+        region: 'ON',
+        postcode: 'M5H 1J9',
+        country: 'Canada'
+      }
     }
   },
   {
     name: 'ForeUp',
     merchants: ['ForeUp', 'ForeUp Pro Shop'],
-    address: {
-      company: 'ForeUp Ltd',
-      line1: '2 Bedford Square',
-      line2: 'Floor 3',
-      city: 'Manchester',
-      region: '',
-      postcode: 'M1 2EB',
-      country: 'United Kingdom'
+    addresses: {
+      US: {
+        company: 'ForeUp Inc',
+        line1: '1200 Riverside Drive',
+        line2: 'Floor 3',
+        city: 'Provo',
+        region: 'UT',
+        postcode: '84604',
+        country: 'United States'
+      },
+      CA: {
+        company: 'ForeUp Canada Inc',
+        line1: '1055 West Georgia Street',
+        line2: '',
+        city: 'Vancouver',
+        region: 'BC',
+        postcode: 'V6E 3P3',
+        country: 'Canada'
+      }
     }
   },
   {
     name: 'Vermont Systems',
     merchants: ['Vermont Systems', 'Vermont Rec'],
-    address: {
-      company: 'Vermont Systems Pty Ltd',
-      line1: '120 Collins Street',
-      line2: '',
-      city: 'Melbourne',
-      region: 'VIC',
-      postcode: '3000',
-      country: 'Australia'
+    addresses: {
+      US: {
+        company: 'Vermont Systems Inc',
+        line1: '12 Market Place',
+        line2: '',
+        city: 'Essex Junction',
+        region: 'VT',
+        postcode: '05452',
+        country: 'United States'
+      },
+      CA: {
+        company: 'Vermont Systems Canada Inc',
+        line1: '275 Portage Avenue',
+        line2: '',
+        city: 'Winnipeg',
+        region: 'MB',
+        postcode: 'R3B 2B3',
+        country: 'Canada'
+      }
     }
   }
 ];
@@ -160,6 +312,15 @@ function deviceById(id) {
   return DEVICES.filter(function (d) { return d.id === id; })[0];
 }
 
-function money(amount) {
-  return CURRENCY.symbol + amount.toFixed(2);
+/* Every amount on every screen formats through here, so the ISO code the user
+   asked for lands everywhere at once: $522.17 USD, $400.00 CAD.
+
+   `regionCode` is optional and exists for records rather than for live state:
+   an order carries the region it was placed in, so an order placed in one
+   region still shows its own currency after the prototype is switched to the
+   other. Orders saved before regions existed have no region and fall back to
+   the current one, exactly as they did before. */
+function money(amount, regionCode) {
+  const currency = regionOf(regionCode || currentRegionCode()).currency;
+  return currency.symbol + amount.toFixed(2) + ' ' + currency.code;
 }

@@ -65,21 +65,43 @@ function addressBlock() {
         '<span class="ms" aria-hidden="true">edit</span>Edit address</button></div>' +
     '</div>';
   }
-  function field(id, label, value, full) {
+  function field(id, label, value, full, placeholder) {
     return '<label class="field' + (full ? ' field--full' : '') + '">' +
       '<span class="field__label">' + esc(label) + '</span>' +
-      '<span class="input"><input id="' + id + '" type="text" value="' + esc(value) + '"></span>' +
+      '<span class="input"><input id="' + id + '" type="text" value="' + esc(value) + '"' +
+        (placeholder ? ' placeholder="' + esc(placeholder) + '"' : '') + '></span>' +
     '</label>';
   }
+
+  /* The two fields that differ between the regions. The United States takes a
+     State and a ZIP code, Canada a Province and a Postal code — different
+     words for different things, not a relabelling, which is why the list
+     behind the picker comes from the region too. The picker holds the
+     two-letter code, which is what the address block already prints. */
+  const r = currentRegion();
+  const subdivisionOpts = ['<option value="">Select a ' + esc(r.subdivisionLabel.toLowerCase()) + '…</option>']
+    .concat(r.subdivisions.map(function (pair) {
+      return '<option value="' + esc(pair[0]) + '"' + (pair[0] === a.region ? ' selected' : '') + '>' +
+        esc(pair[1]) + '</option>';
+    })).join('');
+
   return '<div class="address">' +
     '<div class="form-grid">' +
       field('addr-company', 'Company name', a.company, true) +
       field('addr-line1', 'Address line 1', a.line1, true) +
       field('addr-line2', 'Address line 2', a.line2, true) +
       field('addr-city', 'City', a.city) +
-      field('addr-region', 'State or region', a.region) +
-      field('addr-postcode', 'Postcode', a.postcode) +
-      field('addr-country', 'Country', a.country) +
+      '<label class="field"><span class="field__label">' + esc(r.subdivisionLabel) + '</span>' +
+        '<span class="input"><select id="addr-region">' + subdivisionOpts + '</select>' +
+        '<span class="ms ms--secondary" aria-hidden="true">keyboard_arrow_down</span></span></label>' +
+      field('addr-postcode', r.postcodeLabel, a.postcode, false, r.postcodePlaceholder) +
+      /* The country is the region, so it is shown rather than asked for:
+         letting it be typed would let the address contradict the setting that
+         decides the devices, the currency and these very fields. */
+      '<label class="field"><span class="field__label">Country</span>' +
+        '<span class="input input--readonly"><input id="addr-country" type="text" readonly value="' +
+          esc(r.country) + '"></span>' +
+        '<span class="field__helper">Set by the Region in the prototype bar.</span></label>' +
     '</div>' +
     '<div style="display:flex;gap:var(--space-gap-related)">' +
       '<button class="btn btn--primary btn--small" type="button" id="save-address">Save address</button>' +
@@ -355,7 +377,7 @@ function renderCheckout() {
 
         '<button class="btn btn--primary btn--large" type="button" id="submit" style="width:100%">' +
           submitLabel() + '</button>' +
-        '<p class="t-caption t-subtle" style="margin:0;text-align:center">Delivering to ' + esc(state.country) + '</p>' +
+        '<p class="t-caption t-subtle" style="margin:0;text-align:center">Delivering to ' + esc(currentRegion().label) + '</p>' +
       '</div>' +
     '</div>' +
     '</div>';
@@ -615,7 +637,7 @@ function confirmCopy(order) {
             'the order once that is settled, and the status here updates to In transit when it ' +
             'is on its way.',
       moneyKey: 'Order total',
-      moneyVal: esc(money(order.total)),
+      moneyVal: esc(money(order.total, order.region)),
       extra: ['Payment', 'Purchase order and invoice, outside Odin']
     };
   }
@@ -628,7 +650,7 @@ function confirmCopy(order) {
       body: 'We\u2019ve emailed the operations team. They fulfil the order outside Odin, and the ' +
             'status here updates to In transit once it\u2019s on its way.',
       moneyKey: 'To be deducted',
-      moneyVal: esc(money(order.total)) + ' from your ' + esc(nextPayoutMonth()) + ' payout',
+      moneyVal: esc(money(order.total, order.region)) + ' from your ' + esc(nextPayoutMonth()) + ' payout',
       extra: null
     };
   }
@@ -641,7 +663,7 @@ function confirmCopy(order) {
       body: 'Payment went through and we\u2019ve emailed the operations team. They fulfil the ' +
             'order outside Odin, and the status here updates to In transit once it\u2019s on its way.',
       moneyKey: 'Paid today',
-      moneyVal: esc(money(order.total)) + ' by card',
+      moneyVal: esc(money(order.total, order.region)) + ' by card',
       extra: null
     };
   }
@@ -654,7 +676,7 @@ function confirmCopy(order) {
     body: 'We\u2019ve emailed the operations team. They fulfil the order outside Odin, and the ' +
           'status here updates to In transit once it\u2019s on its way.',
     moneyKey: 'Paid today',
-    moneyVal: esc(money(order.total)),
+    moneyVal: esc(money(order.total, order.region)),
     extra: null
   };
 }

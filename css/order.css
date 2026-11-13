@@ -115,6 +115,16 @@
 }
 .atlas .device-card__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
 
+/* The Victa renders are cut out with a transparent background, so they sit on
+   the sunken image box as they are. The two Ingenico renders are product shots
+   photographed on white, and a white rectangle inside a grey box looks like a
+   mistake — multiplying them drops the white to the box colour and leaves the
+   dark hardware untouched. This is a deliberate, opted-in use of the same
+   property blocked on `.badge` above: there it was Odin's rule leaking into an
+   Atlas component, here it is an Atlas rule put on an image on purpose. */
+.atlas .device-card__media img.on-white,
+.atlas .detail__media img.on-white { mix-blend-mode: multiply; }
+
 .atlas .device-card__name { font-size: var(--type-card-title-size); font-weight: var(--type-card-title-weight);
   line-height: var(--type-card-title-line-height); letter-spacing: var(--type-card-title-letter-spacing); }
 .atlas .device-card__price { font-size: var(--type-body-large-size); line-height: var(--type-body-large-line-height);

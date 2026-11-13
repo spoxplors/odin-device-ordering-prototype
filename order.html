@@ -41,15 +41,18 @@
 <script>
 renderShell('device-list').append(document.getElementById('page-template').content);
 
-/* The catalogue shows every device: the filter chips and the Deliver to
-   control were removed from the controls row, and the row with them. The
-   chips survive on each card as plain tags. */
+/* The catalogue shows every device sold in the current region — the two Victa
+   devices in the United States, the two Ingenico ones in Canada. There are no
+   filters: the chips were removed from the controls row along with the row,
+   and survive on each card as plain tags. */
 function renderGrid() {
-  document.getElementById('empty').hidden = DEVICES.length > 0;
-  document.getElementById('grid').innerHTML = DEVICES.map(function (d) {
+  const devices = devicesForRegion(state.region);
+  document.getElementById('empty').hidden = devices.length > 0;
+  document.getElementById('grid').innerHTML = devices.map(function (d) {
     return '<a class="card device-card" href="device.html?id=' + esc(d.id) + '">' +
       '<span class="badge badge--brand">Available to order</span>' +
-      '<span class="device-card__media"><img src="' + esc(d.image) + '" alt="' + esc(d.name) + '"></span>' +
+      '<span class="device-card__media"><img' + (d.imageOnWhite ? ' class="on-white"' : '') +
+        ' src="' + esc(d.image) + '" alt="' + esc(d.name) + '"></span>' +
       '<span class="device-card__name">' + esc(d.name) + '</span>' +
       '<span class="device-card__price">' + esc(money(d.price)) + '</span>' +
       '<span class="device-card__chips">' +

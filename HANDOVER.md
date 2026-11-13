@@ -1,6 +1,6 @@
 # Handover — Odin device ordering POC
 
-Last updated: 10 November 2026
+Last updated: 13 November 2026
 
 Picking this up fresh: read this file top to bottom first. *Decisions already
 made* and *Gotchas worth knowing* are the two sections that will save you
@@ -33,8 +33,45 @@ has been reviewed by a human.** The user has been steering it screen by screen,
 so the *Decisions* section is where their instructions are recorded — read it
 before changing anything there.
 
+**The region round is not committed yet.** Everything before it is: `main`
+was clean at `b446764`, pushed, with the live site built from it, and the
+history to that point, newest first, is
+
+- `b446764` — Empty the Devices table, add a cart toast, simplify Phase 2
+- `261d0a2` — Use the real device prices, in USD
+- `b53c27b` — Make the sidebar collapse button work
+- `a9fa4f8` — Add a phone field to the checkout's contact card
+- `b0ca118` — Remove the catalogue's controls row
+- `b9d1d51` — Record publication and this round's changes in the handover
+- `96d10b0` — Device ordering prototype for Odin
+
+The loose end worth knowing about before you start is the note under *The
+Devices table is empty on purpose*: ordering does not fill it back in. Nobody
+has asked for it; it would be real work.
+
 Most recent round of changes, in order:
 
+- **The prototype sells into two regions now, and they do not overlap.** A
+  **Region** dropdown in the prototype settings bar switches between the
+  **United States** and **Canada**. The United States keeps the two Verifone
+  Victa devices, priced in USD. Canada gets two Ingenico devices — **Link 2500
+  LE** and **Lane 3600**, both at 400.00 — priced in CAD, and the Victa devices
+  are not offered there at all. Six bullets in *Decisions* cover what the
+  region decides and why; read them before changing any of it.
+- **Every amount now carries its ISO code** — `$522.17 USD`, `$400.00 CAD` —
+  on every screen, because `money()` appends it. An order records the region it
+  was placed in and is formatted in that region's currency, so nothing is ever
+  relabelled under a reader. Switching region **discards** the orders placed
+  before it, which the user asked for after the rest of this round — see the
+  bullet in *Decisions*, because it cannot be undone.
+- **The region replaced the delivery country**, which closes an open item that
+  stood here for two rounds: `state.country` had had no control since the
+  catalogue's controls row was removed. Shipping and tax key off the region,
+  `COUNTRIES` and the dead `deliverToHtml()` / `bindDeliverTo()` are gone, and
+  the checkout's Country field is now read-only.
+- **The shipping address changes shape with the region** — *State* and *ZIP
+  code* in the United States, *Province* and *Postal code* in Canada, each with
+  a picker over that region's own list.
 - **Phase 2 lost three things on the user's instruction**: the beta callout on
   the device detail page, the *order is placed once payment completes* callout
   on the checkout, and the card / payout choice. A standard merchant now goes
@@ -59,7 +96,8 @@ Most recent round of changes, in order:
 - **The catalogue's controls row was removed** — the *Deliver to* control and
   the filter chips both, on the user's instruction. The catalogue now shows
   every device, and the chips survive only as the plain `.tag`s on each card.
-  This took the last writer of `state.country` with it: see *Open items*.
+  This took the last writer of `state.country` with it, which stood as an open
+  item until the Region dropdown replaced the whole idea.
 
 The round before that:
 
@@ -126,11 +164,12 @@ No build step, no dependencies.
 | `css/atlas-components.css` | Atlas primitives built on those tokens |
 | `css/order.css` | Layout for the ordering flow only |
 | `css/prototype-start.css` | Layout for the starter page only |
-| `js/devices-catalogue.js` | Victa device data, prices, businesses, countries |
+| `js/devices-catalogue.js` | Regions, every device, prices, businesses, money |
 | `js/order.js` | Cart, totals, address, orders; the phase / merchant-type helpers and the Cart control |
 | `js/prototype-bar.js` | The prototype settings bar. `css/prototype-bar.css` |
 | `user-flows/flow.md` | The source flow spec — three phases |
 | `assets/devices/victa/` | Victa renders from the datasheets skill |
+| `assets/devices/ingenico/` | Link/2500 and Lane/3600 renders the user supplied |
 
 `index.html` is the exception to everything below: it is the way into
 the prototype rather than a screen inside Odin, so it draws no app bar or
@@ -203,6 +242,69 @@ anything already crawled may persist in caches for a while.
 
 ## Decisions already made — do not relitigate without asking
 
+- **The region is the one delivery setting, and the two regions do not
+  overlap.** `REGIONS` in `js/devices-catalogue.js` holds the United States and
+  Canada, and the region decides four things at once: which devices are on
+  offer, which currency they are priced in, which shipping and tax apply, and
+  what the shipping address looks like. A device carries a `region` and belongs
+  to exactly one, which is why a price needs no currency of its own. The
+  control is a **Region** dropdown in the prototype bar, built from
+  `REGION_CODES` so a third region would appear there on its own.
+- **Switching region empties the cart, drops the address and discards every
+  placed order.** The user was asked about the cart and chose clearing over
+  warning or keeping; they later asked for the orders to go the same way, so a
+  reviewer in one region cannot read orders from the other. Every device
+  belongs to one region, so a Victa in a Canadian order is something the real
+  product could never produce; the address goes because it is the business's
+  address for the old region, in the old region's format. `setRegion()` in
+  `js/order.js` does all three, and the bar reloads the page after it.
+  **This is destructive and there is no undo** — a region switch costs you the
+  order history exactly as *Reset prototype* does, and a summary URL for a
+  discarded order falls to *Order not found*. Clearing was asked for over
+  filtering, which would have kept the records and merely hidden them. Two
+  consequences worth knowing: `makeOrderNumber()` counts `state.orders`, so
+  numbering restarts at `ORD-<year>-0001` after a switch and an order number
+  can be reused across one; and `money()` still takes a per-order region,
+  because an order outlives the switch within a page's lifetime — the
+  confirmation screen is still on screen when the bar is used — and because an
+  order stored before regions existed carries none.
+- **Every amount carries its ISO code.** `money()` returns `$522.17 USD` and
+  `$400.00 CAD`, and the user chose this for every amount rather than device
+  prices alone — unit prices, line totals, subtotal, shipping, tax, totals, the
+  orders table and the summaries. `money()` takes an optional region so a
+  **record** formats in its own currency: `submitOrder()` writes `region` onto
+  the order, and `orders.html`, `order-summary.html` and the confirmation in
+  `checkout.html` pass `order.region`. An order placed before regions existed
+  has none and falls back to the current one, as it did before.
+- **The shipping address differs by region, and the country is not typed.**
+  The United States takes a **State** and a **ZIP code**, Canada a **Province**
+  and a **Postal code** — different things, not relabelled ones, so the picker
+  behind each is that region's own list (51 US states and DC, 13 Canadian
+  provinces and territories) and the field holds the two-letter code the
+  address block already prints. The user was offered plain relabelled text
+  fields and chose the pickers. **Country is read-only**, showing the region's
+  country with a helper saying so: it is the region, and letting it be typed
+  would let the address contradict the setting that decides the devices, the
+  currency and those very fields.
+- **The two Canadian devices are Ingenico, and their specs are only as good as
+  the datasheets read.** The Link/2500 datasheet decoded in full, but it gives
+  four columns — Slim and Standard, two each — without saying which the LE is,
+  so size, weight and battery are given as the range it covers rather than
+  pinned to one column. The Lane/3600 specification table is set in a
+  subset-embedded font that could not be read on this machine, so its spec rows
+  come from the feature copy alone and its display size, dimensions, weight,
+  connectivity and in-box contents are **left out rather than guessed** — which
+  is why its *Included accessories* list has one entry. See *Open items*. The
+  hardware facts that are there are Ingenico's; do not edit them.
+- **The two Ingenico renders are multiplied onto the image box.** They are
+  product shots on white, not cut-outs like the Victa renders, and a white
+  rectangle inside the sunken grey box reads as a mistake. A device opts in
+  with `imageOnWhite: true` and the image gets `.on-white`, which sets
+  `mix-blend-mode: multiply` in `css/order.css`. That is the same property
+  blocked on `.badge` under *Keeping the two systems apart* — there it was
+  Odin's rule leaking into an Atlas component, here it is an Atlas rule put on
+  an image deliberately. If a cut-out render of either device turns up, drop
+  the flag rather than keeping the blend.
 - **`index.html` is the starter page; `devices.html` is the Devices list.**
   They were the other way round until publication: Pages serves `index.html` at
   the site root and the user picked the starter page as the landing page.
@@ -298,8 +400,9 @@ anything already crawled may persist in caches for a while.
   the same pass — the nav's *Device list* item is the way back to ordering.
   Of the three controls it composed, only `cartButtonHtml()` is still called —
   by the catalogue and the device detail page. `deliverToHtml()` and
-  `bindDeliverTo()` went dead when the catalogue's controls row was removed,
-  and `COUNTRIES` in `js/devices-catalogue.js` is now read by dead code alone.
+  `bindDeliverTo()` went dead when the catalogue's controls row was removed and
+  were deleted outright when the region replaced the destination they set, so
+  `renderFlowBar()` is now a breadcrumb and a cart button.
 - **The order summary carries a back link to Orders**, and so must any
   summary page added later. It is the same `.back-link` tertiary button with a
   chevron as the two pages below, but it reads *Back to orders* and goes to
@@ -359,16 +462,15 @@ anything already crawled may persist in caches for a while.
   down to an `h2` (keeping `.t-page-title`, so it looks unchanged) to leave one
   `h1` per page. This partly reverses the bullet below: the detail page shows
   the cart count again, though never *Deliver to*.
-- **The delivery country can no longer be set anywhere.** It shrank with the
-  flow bar to the catalogue's controls row, and went entirely when the user had
-  that row removed. `state.country` keeps whatever is in `localStorage` —
-  `United Kingdom` on a fresh state or after *Reset prototype* — and in Phase 2
-  that fixes shipping and the tax band with it. Checkout still *shows* the
-  country under the submit button; the country field in its address form writes
-  `state.address.country`, the shipping label, not `state.country`. Putting the
-  choice back means either a control in the prototype bar or making that
-  address field drive `state.country`; the user has not asked for either. See
-  *Open items*.
+- **The delivery country is the region, and nothing else sets it.** This
+  bullet used to say the destination could not be set at all: it had shrunk
+  with the flow bar to the catalogue's controls row and went entirely when the
+  user had that row removed. The Region dropdown replaced it. `state.country`
+  is gone, `COUNTRIES` with it, and `deliverToHtml()` / `bindDeliverTo()` were
+  deleted rather than left dead — two competing destinations would have been
+  worse than none, and git history has them if the control is ever wanted back.
+  The country field in the checkout's address form writes
+  `state.address.country`, the shipping label, and is now read-only.
 - **The catalogue follows its own mockup**, minus its controls row. The cart
   sits beside the page title; the mockup dropped the BETA badge and the *Which
   device is right for me?* link, and the user later dropped *Deliver to* and the
@@ -474,28 +576,29 @@ open question in flow.md.
 
 1. **Tax and shipping are placeholders; the unit prices are not.**
    `UNIT_PRICES` at the top of `js/devices-catalogue.js` are the user's own
-   figures. `TAX_RATES` and `SHIPPING_RATES` beside them are still invented.
+   figures — the two Victa devices in USD, the two Ingenico devices at 400.00
+   CAD. The `shipping` and `tax` on each region beside them are invented.
 
-   The tax table especially is a simplification that should not be mistaken for
-   a calculation: it is one flat rate per country. Real figures do not work that
-   way — UK and Irish VAT are different rates, Australian and New Zealand GST
-   are different rates again, US sales tax is set by state and turns on nexus
-   rather than being a national rate (which is why the US row shows *Varies by
-   state* instead of an amount), and an EU B2B supply may be reverse-charged to
-   the customer. The checkout says on screen that the rates are indicative.
-   Everything is priced in **USD** regardless of destination, which is a
-   further simplification — and one that now shows. The user supplied the unit
-   prices in dollars and chose USD when asked, but `SHIPPING_RATES` and the
-   VAT / GST labels were written against sterling and were not reworked, so a
-   United Kingdom order reads *VAT (20%)* and `$9.99` shipping. That was put to
-   the user with the figures spelled out and accepted. Changing it means
-   revisiting both tables; the currency itself is one line, `CURRENCY` in
-   `js/devices-catalogue.js`.
+   `shipping` is a flat charge per order, not per device and not
+   carrier-derived. The tax treatment is a simplification rather than a
+   calculation, and the two regions are simplified differently:
 
-   Orders already in `localStorage` keep the numbers they were placed with and
-   are re-rendered through the current symbol, so an order placed before this
-   change shows its old sterling amounts with a dollar sign. *Reset prototype*
-   clears them.
+   - **United States** — no rate at all. Sales tax is set by state and turns on
+     nexus, so there is no national rate to show; the row reads *Varies by
+     state* in place of an amount, as it always has.
+   - **Canada** — a flat **GST at 5%**, which is federal and does genuinely
+     apply everywhere. Provincial PST, and the provinces on HST, add more on
+     top and are **not** modelled, so a Canadian total is a floor rather than a
+     figure anyone should quote. This was added with the region and put to the
+     user as an assumption rather than asked.
+
+   The checkout says on screen that the rates are indicative. Orders already in
+   `localStorage` keep the numbers they were placed with, and now also the
+   region they were placed in, so an order placed in one region keeps its own
+   currency after the prototype is switched to the other. An order placed
+   before regions existed has no region and falls back to the current one —
+   and one placed before the USD change still shows its old sterling amounts
+   under a dollar sign. *Reset prototype* clears them.
 2. **The modal scrim is invented.** Atlas publishes no scrim token, so
    `.atlas .modal` in `css/atlas-components.css` uses `--color-text-primary`
    (`#14141c`) at 50% — the ink the shadow tokens are mixed from. Same standing
@@ -512,12 +615,15 @@ open question in flow.md.
    `--color-icon-disabled` and the `--type-page-title-*` ramp. No frame in the
    Atlas file binds them, so `get_variable_defs` returns nothing; they are
    reasoned from neighbouring tokens. Needs a designer's eye.
-5. **Nothing can set the delivery destination.** Removing the catalogue's
-   controls row removed the only writer of `state.country`, so every order is
-   priced and shipped to the stored country and a reviewer cannot try another.
-   The tax and shipping tables are still wired and still work; only the way in
-   is gone. Worth a decision: a control in the prototype bar, the checkout
-   address field driving it, or leaving it fixed on purpose.
+5. **The Lane/3600's specification table was never read.** The supplied
+   datasheet sets it in a subset-embedded font, and there is no PDF tooling on
+   this machine, so only the feature copy decoded. Its display size,
+   dimensions, weight, connectivity, operating system and in-box contents are
+   missing from `js/devices-catalogue.js` rather than guessed — which is why
+   its *Included accessories* card lists the device alone. The Link/2500's
+   table decoded in full, but its four columns do not say which is the LE, so
+   size, weight and battery are given as ranges. Both are worth a pass by
+   someone who can open the PDFs.
 6. **Phases 1 and 2 have not been reviewed** by the user.
 7. **Phase 3** (payment plans) is untouched. See flow.md.
 8. **Failed payment is not modelled** — the simulated payment always succeeds,
@@ -570,7 +676,9 @@ open question in flow.md.
 **Data and content**
 - No real merchant, cardholder or payment data belongs in this repo. The
   businesses, merchants and addresses in `js/devices-catalogue.js` are invented
-  and stand in for an authorised, tenant-scoped API response.
+  and stand in for an authorised, tenant-scoped API response. Each business now
+  carries one address per region — a US one and a Canadian one — and both are
+  invented, postcodes included.
 - The supplied checkout mockup contains a personal email address. It was
   deliberately **not** carried into the prototype; the email field uses a
   neutral placeholder. Keep it that way. The phone field's placeholder is
@@ -584,24 +692,50 @@ open question in flow.md.
   prototype* is the only thing that clears it, and it survives reloads until
   then. Unlike the card fields (see *Card data*), these values are deliberately
   retained, because the order record is meant to carry them.
-- Device renders, headlines and specs come from the Verifone Victa datasheets
-  bundled with the `victa-devices-datasheets` skill. The hardware facts are
-  Verifone's — do not edit them.
+- The Victa renders, headlines and specs come from the Verifone Victa
+  datasheets bundled with the `victa-devices-datasheets` skill; the Link/2500
+  and Lane/3600 ones come from the Ingenico datasheets the user supplied, and
+  their renders are the images the user attached with them. The hardware facts
+  are Verifone's and Ingenico's — do not edit them, and see *Open items* 5 for
+  what could not be read out of the Ingenico PDFs.
 - The mockups are screenshots of **Stripe's** product UI, used for interaction
   pattern and page anatomy only, not Stripe's visual design or copy.
 
 ## Verifying a change
 
-Serve, then in a browser at 1553×1079. The prototype bar drives the phase, who
-is ordering and the merchant type; *Reset prototype* clears `localStorage`.
+Serve, then in a browser at 1553×1079. The prototype bar drives the phase, the
+region, who is ordering and the merchant type; *Reset prototype* clears
+`localStorage`.
+
+Regions — check both, because almost everything below now has two answers:
+
+- the catalogue shows **Victa Portable and Victa Mobile** in the United States
+  and **Link 2500 LE and Lane 3600** in Canada, and neither pair appears in the
+  other region
+- every amount on every screen carries its ISO code — `$522.17 USD`,
+  `$400.00 CAD` — and none carries a `£`
+- switching region empties the cart, resets the address to the business's
+  address for the new region, and **discards every placed order**: place a
+  Canadian order, switch to the United States, and Orders must be back to
+  *No device orders yet* with that order's summary URL showing *Order not
+  found*
+- within one page's lifetime an order still shows its own currency — submit a
+  Canadian order and the confirmation reads CAD, whatever the bar is set to
+  afterwards
+- `device.html?id=victa-portable` while the region is Canada falls back to the
+  first Canadian device rather than showing a Victa that cannot be ordered
+- the address form reads **State / ZIP code** in the United States and
+  **Province / Postal code** in Canada, each picker holding that region's own
+  list, and **Country is read-only** in both
+- the Phase 2 tax row reads *Varies by state* with no amount in the United
+  States and **GST (5%)** with a calculated amount in Canada
+- the two Ingenico renders sit on the sunken image box with no visible white
+  rectangle around them, on both the card and the detail page
 
 Phase 2:
 
-- Standard merchant: subtotal, shipping and tax add to a non-zero total. The
-  destination can no longer be changed in the UI, so to exercise the other tax
-  bands — including the United States, which shows *Varies by state* rather
-  than an amount — edit `country` in `odin.deviceOrdering.v1` in devtools and
-  reload
+- Standard merchant: subtotal, shipping and tax add to a non-zero total, in
+  both regions
 - submit is refused with empty card fields, and the first field takes focus
 - filling them and submitting shows *Processing payment…*, then a confirmation
   reading *Paid today … by card*

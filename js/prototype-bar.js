@@ -22,6 +22,12 @@
     { value: '2', label: 'Phase 2 · Payment added' }
   ];
 
+  /* Built from REGIONS so the bar cannot drift out of step with the catalogue:
+     adding a third region there puts it in this dropdown too. */
+  const REGION_OPTIONS = REGION_CODES.map(function (code) {
+    return { value: code, label: REGIONS[code].label };
+  });
+
   const MODES = [
     { value: 'merchant', label: 'Merchant' },
     { value: 'ops', label: 'Internal ops' }
@@ -67,6 +73,7 @@
     bar.innerHTML =
       '<span class="proto-bar__brand"><span class="proto-bar__dot"></span>Prototype settings</span>' +
       group('proto-phase', 'Phase', PHASES, state.phase, false) +
+      group('proto-region', 'Region', REGION_OPTIONS, state.region, false) +
       group('proto-mode', 'Ordering as', MODES, state.mode, false) +
       group('proto-merchant-type', 'Merchant type', MERCHANT_TYPES, state.merchantType, phase1,
             phase1 ? 'Phase 2 only' : '') +
@@ -79,6 +86,14 @@
     bar.querySelector('#proto-phase').addEventListener('change', function () {
       state.phase = Number(this.value);
       commit();
+      reloadWithoutPhase();
+    });
+
+    /* setRegion() empties the cart and drops the address on the way through —
+       see the note on it in js/order.js. Both are deliberate, and the reload
+       is what makes the new catalogue and address form appear. */
+    bar.querySelector('#proto-region').addEventListener('change', function () {
+      setRegion(this.value);
       reloadWithoutPhase();
     });
 

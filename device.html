@@ -34,7 +34,14 @@
 renderShell('device-list').append(document.getElementById('page-template').content);
 
 const params = new URLSearchParams(location.search);
-const device = deviceById(params.get('id')) || DEVICES[0];
+
+/* A device is only orderable in its own region, so a link to one the current
+   region does not sell — a bookmark, or the other region's URL — falls back to
+   the first device this region does sell rather than showing a device that
+   cannot be added to the cart. */
+const regionDevices = devicesForRegion(state.region);
+const asked = deviceById(params.get('id'));
+const device = (asked && asked.region === state.region) ? asked : regionDevices[0];
 
 document.getElementById('main').innerHTML =
   /* The way back to the catalogue, now that this page has no flow bar. */
@@ -58,7 +65,8 @@ document.getElementById('main').innerHTML =
     '</span>' +
   '</div>') +
   '<div class="detail">' +
-    '<div class="detail__media"><img src="' + esc(device.image) + '" alt="' + esc(device.name) + '"></div>' +
+    '<div class="detail__media"><img' + (device.imageOnWhite ? ' class="on-white"' : '') +
+      ' src="' + esc(device.image) + '" alt="' + esc(device.name) + '"></div>' +
     '<div class="detail__side">' +
       '<div>' +
         '<h2 class="t-page-title">' + esc(device.name) + '</h2>' +

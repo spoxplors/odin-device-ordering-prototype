@@ -124,22 +124,22 @@ function render() {
           (device ? '<img class="line__thumb" src="' + esc(device.image) + '" alt="">' : '') +
           '<span class="line__body">' +
             '<span class="line__name">' + esc(l.name) + '</span><br>' +
-            '<span class="t-secondary">' + esc(money(l.unit)) + ' each</span>' +
+            '<span class="t-secondary">' + esc(money(l.unit, order.region)) + ' each</span>' +
           '</span>' +
-          '<span class="line__total">' + esc(money(l.lineTotal)) + '</span>' +
+          '<span class="line__total">' + esc(money(l.lineTotal, order.region)) + '</span>' +
         '</div>';
       }).join('') +
 
       '<div class="summary summary-lines__totals">' +
-        row('Subtotal', esc(money(order.subtotal))) +
+        row('Subtotal', esc(money(order.subtotal, order.region))) +
         (order.discount > 0
           ? '<div class="row summary__discount"><span class="row__key">BETA discount (100%)</span>' +
-            '<span class="row__val">−' + esc(money(order.discount)) + '</span></div>'
+            '<span class="row__val">−' + esc(money(order.discount, order.region)) + '</span></div>'
           : '') +
-        (order.shipping ? row('Shipping', esc(money(order.shipping))) : '') +
-        (order.tax ? row(order.taxLabel || 'Tax', esc(money(order.tax))) : '') +
+        (order.shipping ? row('Shipping', esc(money(order.shipping, order.region))) : '') +
+        (order.tax ? row(order.taxLabel || 'Tax', esc(money(order.tax, order.region))) : '') +
         '<div class="row summary__grand"><span class="row__key">' + esc(totalLabel(order)) + '</span>' +
-          '<span class="row__val">' + esc(money(order.total)) + '</span></div>' +
+          '<span class="row__val">' + esc(money(order.total, order.region)) + '</span></div>' +
       '</div>' +
     '</div>';
 }

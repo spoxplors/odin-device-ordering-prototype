@@ -73,7 +73,7 @@ function render() {
           '<td>' + esc(o.merchant) + '</td>' +
           '<td>' + esc(devices) + '</td>' +
           '<td>' + esc(dest) + '</td>' +
-          '<td>' + esc(money(o.total)) + '</td>' +
+          '<td>' + esc(money(o.total, o.region)) + '</td>' +
           '<td>' + statusBadge(o.status) + '</td>' +
         '</tr>';
       }).join('') +
