@@ -113,7 +113,6 @@
   background: var(--color-background-surface-sunken);
   border-radius: var(--radius-default);
 }
-.atlas .device-card__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
 
 /* The Victa renders are cut out with a transparent background, so they sit on
    the sunken image box as they are. The two Ingenico renders are product shots
@@ -153,7 +152,33 @@
   border: var(--border-default) solid var(--color-border-default);
   border-radius: var(--radius-large);
 }
-.atlas .detail__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+/* Both image boxes size their image the same way, and deliberately not with a
+   percentage max-height.
+
+   WebKit (Safari, and the iOS browsers) drops a percentage max-height on an
+   image that is a flex item in some containing contexts, even when the flex
+   box has an explicit height — `.detail__media` has `height: 450px` and it was
+   dropped anyway. The image then laid itself out at its intrinsic size and
+   spilled across the page. It was reported on the two Victa detail pages
+   because their renders are tall portraits, held by max-height; a square or
+   landscape render is held by max-width instead, which WebKit does apply, so
+   those looked fine and hid it. Chromium and Firefox applied both all along.
+   `.device-card__media` happened to survive in WebKit, but it is the same
+   pattern in the same engine, so it is written the same way here rather than
+   left to luck.
+
+   Nothing here resolves a percentage: the flex line stretches the image box to
+   the container, and object-fit does the fitting. `scale-down` rather than
+   `contain` so an image smaller than its box still draws at its own size, as
+   it did under max-width/max-height, instead of being blown up. */
+.atlas .device-card__media img,
+.atlas .detail__media img {
+  flex: 1 1 auto;       /* across: fill the box ... */
+  min-width: 0;         /* ... with the image's own width setting no floor */
+  align-self: stretch;  /* down: the box's height, not a percentage of it */
+  object-fit: scale-down;
+}
 
 .atlas .detail__side { display: flex; flex-direction: column; gap: var(--space-gap-group); }
 .atlas .detail__price { font-size: var(--type-body-large-size); line-height: var(--type-body-large-line-height); color: var(--color-text-secondary); }
@@ -265,7 +290,16 @@
 .atlas .cart-line:last-child { border-bottom: 0; }
 
 .atlas .cart-line__media { display: flex; align-items: center; justify-content: center; height: 56px; }
-.atlas .cart-line__media img { max-height: 100%; max-width: 100%; object-fit: contain; }
+/* The 64px grid column and the 56px height are both explicit, and WebKit
+   dropped the image's percentage max-height here too, drawing the thumbnail at
+   full size over the rows above — the same bug, and the same fix, as the
+   device image boxes further up. */
+.atlas .cart-line__media img {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: stretch;
+  object-fit: scale-down;
+}
 
 .atlas .cart-line__name { font-weight: var(--type-body-bold-weight); }
 .atlas .cart-line__unit { color: var(--color-text-secondary); white-space: nowrap; }

@@ -575,6 +575,19 @@ anything already crawled may persist in caches for a while.
   the supplied mockups (Stripe's Terminal hardware flow) show catalogue →
   detail → checkout → confirmation, and the user chose the mockups. If it feels
   oversized, collapsing back to one form is a small change.
+- **Device images are sized by the flex line, not by a percentage.** Every
+  image box in the flow — the catalogue card, the device detail page and the
+  cart dialog's thumbnails — gives its `<img>` `flex: 1 1 auto; min-width: 0;
+  align-self: stretch` and `object-fit: scale-down`, with no `max-height` or
+  `max-width`. WebKit ignores a percentage max-height on an image that is a
+  flex item in some containing contexts, even when the box carries an explicit
+  `height`; the image then drew at its intrinsic size and spilled across the
+  page. Reported on the two Victa
+  detail pages in Safari on 13 Nov, and reproduced in the cart dialog too.
+  Stretching the image box to the container and letting `object-fit` do the
+  fitting resolves no percentage at all. `scale-down` rather than `contain`
+  keeps the old behaviour for an image smaller than its box. **Do not put
+  `max-height: 100%` back on any image in a fixed-height box here.**
 
 ## Card data — read before touching the payment section
 
@@ -689,6 +702,19 @@ open question in flow.md.
   every token binding, the MUI mapping, the deliberate semantic fallbacks and
   the open gaps. Read them before building a component.
 
+**Safari / WebKit**
+- WebKit resolves percentage sizing on flex and grid children differently from
+  Chromium: a percentage `max-height` on an image inside a fixed-height flex
+  box can be dropped entirely, leaving the image at its intrinsic size. The
+  flow's image boxes no longer rely on it — see *Decisions* — but any new one
+  will hit the same thing.
+- You can render a page in WebKit without opening Safari:
+  `qlmanage -t -s 1200 -o <out-dir> <file>.html` writes a PNG through
+  QuickLook's WebKit renderer. It does **not** run page JavaScript, so point it
+  at a small static file that links the real stylesheets and holds a copy of
+  the markup rather than at the prototype's own pages, which build themselves
+  in JS. That is how the Victa bug above was reproduced and the fix checked.
+
 **Atlas content**
 - Atlas publishes controls but **no page containers** — no Tabs, Table, Drawer,
   Modal or Stepper, and Chip is WIP. Page shells, filter chips, the quantity
@@ -764,6 +790,10 @@ Regions — check both, because almost everything below now has two answers:
   States and **GST (5%)** with a calculated amount in Canada
 - the two Ingenico renders sit on the sunken image box with no visible white
   rectangle around them, on both the card and the detail page
+- every device image sits inside its box, in **Safari as well as Chrome** —
+  the catalogue cards, both Victa detail pages (their renders are tall
+  portraits, which is what broke) and the thumbnails in the *Edit order*
+  dialog. The WebKit-only way to check this without Safari is in *Gotchas*.
 
 Phase 2:
 
