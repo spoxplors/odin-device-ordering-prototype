@@ -21,115 +21,165 @@
 <div class="proto">
 
   <header class="proto__head">
-    <h1 class="t-page-title">Device ordering prototype</h1>
-    <p class="proto__lede t-body-large t-secondary">
-      Merchants ordering Victa devices from Odin, launching in three phases.
-      Each phase builds on the one before it. Phases 1 and 2 are built and can
-      be walked through; Phase 3 is specified but not built yet.
+    <span class="proto__eyebrow">Device ordering prototype</span>
+    <h1 class="t-page-title">Opportunity statement</h1>
+
+    <p class="proto__lede t-body-large">
+      Bring device ordering, billing and settlement onto ODIN in one flow that
+      works for any acquirer and any region. Victa is the first device line,
+      Canada follows, and other acquirers can be added later.
     </p>
-    <p class="proto__lede t-body-small t-subtle">
-      A dark settings bar sits above the Odin chrome in the prototype. It is
-      scaffolding, not part of the product: use it to switch phase, to order as
-      a merchant or as internal ops, and to set the merchant type.
+
+    <!-- The parenthetical that followed the statement, broken out so the
+         draft status and the owner are readable at a glance. -->
+    <p class="proto__meta">
+      <!-- Warning rather than neutral: the page background is
+           surface-sunken (#fafafc) and the neutral badge is info-subtle
+           (#f4f4f7), so a neutral pill here is invisible. The phase badges
+           below keep neutral because they sit on white cards. -->
+      <span class="badge badge--warning">DRAFT v2</span>
+      <span>11 Nov 2026</span>
+      <span>PM: Steffi Kiran G</span>
+      <span>PD: Spo</span>
+      <a class="link" href="https://clubessentialholdings.atlassian.net/jira/polaris/projects/OR/ideas/view/71aad5d5-98de-4488-871e-58b79aaa5617?selectedIssue=OR-57">View the opportunity in Jira</a>
     </p>
+
+    <!-- The one way in. Always Phase 1, whatever was last used: the prototype
+         bar inside takes over from here and can switch to Phase 2. -->
+    <div class="proto__cta">
+      <a class="btn btn--primary btn--large" href="devices.html?phase=1">
+        Start Prototype<span class="ms" aria-hidden="true">arrow_forward</span>
+      </a>
+      <span class="t-body-small t-subtle">Opens Phase 1. Switch phase, region and who is ordering in the dark settings bar inside.</span>
+    </div>
   </header>
 
-  <div class="phases">
+  <div class="proto__sections">
 
-    <!-- ---------- Phase 1 ---------- -->
-    <section class="card card--hero phase" aria-labelledby="phase-1-title">
-      <div class="phase__head">
-        <div class="phase__titles">
-          <span class="phase__eyebrow">Phase 1</span>
-          <h2 class="t-card-title" id="phase-1-title">Ordering form</h2>
-        </div>
-        <span class="badge badge--success">Built</span>
-      </div>
-
-      <ul class="phase__list">
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>Device catalogue and detail pages for the Victa Portable and Victa Mobile</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>A quantity per device, held in a cart and editable at checkout</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>Shipping address defaulting to the business address on file, with an edit step</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>Submit, which emails the internal operations team — no payment step, and a 100% BETA discount brings the total to zero</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>A confirmation screen, an orders list and an order summary, with the status moving to <em>In transit</em> once operations has fulfilled the order</span></li>
-      </ul>
-
-      <div class="phase__actions">
-        <a class="btn btn--primary btn--large" href="devices.html?phase=1">
-          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 1
-        </a>
-      </div>
+    <section class="card card--hero proto-section" aria-labelledby="problem-title">
+      <h2 class="t-card-title" id="problem-title">Problem context</h2>
+      <p>
+        Device ordering doesn't happen on ODIN today. Each business unit has
+        its own way of ordering devices, and its own way of billing merchants
+        and settling the money for them.
+      </p>
+      <p>
+        Orders are passed by hand between a BU form, PayOps, POS Portal's site
+        and Finance spreadsheets. Nobody has a single view of who ordered what,
+        at what price, who paid, or where the money went. Merchants can't order
+        or pay for devices themselves, so everything goes through a sales rep
+        or Central Ops.
+      </p>
     </section>
 
-    <!-- ---------- Phase 2 ---------- -->
-    <section class="card card--hero phase" aria-labelledby="phase-2-title">
-      <div class="phase__head">
-        <div class="phase__titles">
-          <span class="phase__eyebrow">Phase 2</span>
-          <h2 class="t-card-title" id="phase-2-title">Payment added</h2>
-        </div>
-        <span class="badge badge--success">Built</span>
-      </div>
-
-      <ul class="phase__list">
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>Everything in Phase 1, with the 100% beta discount replaced by a real total — subtotal, shipping and tax</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>A payment section on checkout: pay by card, or have the full amount deducted from next month's payout</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>The order is placed only once payment completes</span></li>
-        <li><span class="ms ms--done" aria-hidden="true">check</span>
-          <span>Government entities skip payment entirely — the order goes to the sales rep, who sends a purchase order and invoice outside Odin</span></li>
-        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
-          <span>Failed payment is still an open question in the spec, so the simulated payment always succeeds</span></li>
+    <section class="card card--hero proto-section" aria-labelledby="impact-title">
+      <h2 class="t-card-title" id="impact-title">Impact</h2>
+      <ul class="proto-list">
+        <li><strong>One way of working instead of many.</strong> Every BU
+          orders, bills and settles devices the same way, in ODIN. Central Ops
+          and Finance work from one record instead of chasing forms and
+          spreadsheets.</li>
+        <li><strong>Built once, reused everywhere.</strong> The flow doesn't
+          depend on a specific acquirer or region. Victa on Worldpay in the US
+          comes first. Canada and the in-person portfolio there come next.
+          Later, other acquirers such as Stripe or Adyen can plug into the same
+          flow without us rebuilding ordering each time.</li>
+        <li><strong>ODIN grows beyond payments.</strong> ODIN starts to
+          orchestrate the in-person business end to end: the device, the order,
+          the payment and the settlement. This is a step towards ODIN being an
+          orchestration platform, not just a payments platform.</li>
+        <li><strong>Self-serve for merchants and reps.</strong> Merchants can
+          order and pay in the portal, and reps stop filling in forms.</li>
       </ul>
-
-      <div class="phase__actions">
-        <a class="btn btn--primary btn--large" href="devices.html?phase=2">
-          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 2
-        </a>
-      </div>
     </section>
 
-    <!-- ---------- Phase 3 ---------- -->
-    <section class="card card--hero phase" aria-labelledby="phase-3-title">
-      <div class="phase__head">
-        <div class="phase__titles">
-          <span class="phase__eyebrow">Phase 3</span>
-          <h2 class="t-card-title" id="phase-3-title">Payment plans added</h2>
-        </div>
-        <span class="badge badge--neutral">Not built yet</span>
-      </div>
-
-      <ul class="phase__list">
-        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
-          <span>Everything in Phase 2, with the payment step extended</span></li>
-        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
-          <span>Pay in full by card today, or schedule monthly deductions from payouts</span></li>
-        <li><span class="ms ms--todo" aria-hidden="true">radio_button_unchecked</span>
-          <span>Scheduled deductions add an administration processing fee to the totals, then confirm the payment schedule</span></li>
+    <section class="card card--hero proto-section" aria-labelledby="outcome-title">
+      <h2 class="t-card-title" id="outcome-title">Desired outcome</h2>
+      <ul class="proto-list">
+        <li>All BUs order Victa devices through ODIN, with no separate BU
+          processes, from closed beta in January.</li>
+        <li>From GA, merchants pay by card when they order, and billing and
+          settlement for devices run through ODIN.</li>
+        <li>No orders re-keyed into POS Portal by the end of H1 2027.</li>
+        <li>Adding Canada, or a new acquirer, is a matter of adding its devices
+          and fulfilment partner, not building a new ordering flow.</li>
       </ul>
+    </section>
 
-      <div class="phase__actions">
-        <button class="btn btn--primary btn--large" type="button" disabled>
-          <span class="ms" aria-hidden="true">arrow_forward</span>Open Phase 3
-        </button>
+    <section class="card card--hero proto-section" aria-labelledby="plan-title">
+      <h2 class="t-card-title" id="plan-title">How we plan to get there</h2>
+      <p>
+        ODIN owns the order flow and payment. POS Portal owns inventory and
+        shipping, so stock counts are out of scope (Graeme, 3 Nov).
+      </p>
+
+      <div class="plan">
+
+        <div class="plan__phase">
+          <div class="plan__head">
+            <span class="proto__eyebrow">Phase 1</span>
+            <h3 class="plan__name">Order with no payment</h3>
+            <span class="badge badge--neutral">Live mid Dec 2026, for beta</span>
+          </div>
+          <ul class="proto-list proto-list--epics">
+            <li><span class="epic">E1</span> Device ordering API: catalogue and orders.</li>
+            <li><span class="epic">E2</span> Staff ordering in the ODIN portal.</li>
+            <li><span class="epic">E8</span> Canada ordering through Maxwell, placed by hand (by Canada go-live).</li>
+          </ul>
+        </div>
+
+        <div class="plan__phase">
+          <div class="plan__head">
+            <span class="proto__eyebrow">Phase 2</span>
+            <h3 class="plan__name">Order with payment</h3>
+            <span class="badge badge--neutral">GA, mid/late Feb to end Apr 2027</span>
+          </div>
+          <ul class="proto-list proto-list--epics">
+            <li><span class="epic">E3</span> Payment for device orders (card only).</li>
+            <li><span class="epic">E4</span> Merchant self-serve ordering and checkout.</li>
+            <li><span class="epic">E5</span> Government purchase orders (override at GA, Submit to sales button by March).</li>
+          </ul>
+        </div>
+
+        <div class="plan__phase">
+          <div class="plan__head">
+            <span class="proto__eyebrow">Phase 3</span>
+            <h3 class="plan__name">Automated ordering and pay from payouts</h3>
+            <span class="badge badge--neutral">May to Jun 2027, depends on the POS Portal API</span>
+          </div>
+          <ul class="proto-list proto-list--epics">
+            <li><span class="epic">E6</span> Automated fulfilment through POS Portal.</li>
+            <li><span class="epic">E12</span> Pay from payouts.</li>
+          </ul>
+        </div>
+
       </div>
+
+      <ul class="proto-list">
+        <li><strong>Not committed yet:</strong> E7 payment plans (H2 2027).</li>
+        <li><strong>Later:</strong> other acquirers and fulfilment partners,
+          such as Stripe or Adyen.</li>
+      </ul>
+    </section>
+
+    <section class="card card--hero proto-section" aria-labelledby="prd-title">
+      <h2 class="t-card-title" id="prd-title">PRD dates</h2>
+      <ul class="proto-list">
+        <li>E1, E2 and E8 — one week after kickoff.</li>
+        <li>E3 and E4 — 4 Dec.</li>
+        <li>E5 — early Jan.</li>
+        <li>E6 — end of Jan.</li>
+      </ul>
     </section>
 
   </div>
 
   <p class="proto__foot t-body-small">
-    The phases come from <code>user-flows/flow.md</code>, which also lists the
-    open questions still to settle. Phase 1 is built as five screens rather than
-    that document's single form, following the supplied mockups. Phase 2 adds
-    payment to those same screens rather than a separate review screen, and its
-    shipping and tax figures are placeholders, not a tax calculation.
+    Phases 1 and 2 are built and can be walked through; Phase 3 is specified
+    but not built. The prototype's own phase, region, ordering mode and
+    merchant type are set in the dark settings bar above the Odin chrome — it
+    is scaffolding, not part of the product. Shipping and tax figures are
+    placeholders, not a tax calculation.
   </p>
 
 </div>

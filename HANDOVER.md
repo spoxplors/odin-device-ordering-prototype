@@ -18,8 +18,9 @@ Four things exist and work:
    **Atlas** tokens in Xplor Pay purple, entered from the *Order devices* button
    on the Devices page. Which phase is live is a setting, not a separate set of
    pages: see *Phases are a setting* below.
-3. **`index.html`** — the way in, listing the three phases and opening
-   Phase 1 or Phase 2.
+3. **`index.html`** — the way in. It carries the opportunity statement and
+   one *Start Prototype* button, which always opens Phase 1. **Read the
+   warning in *Publishing* before pushing it:** its copy is internal.
 4. **A published copy.** The whole prototype is on GitHub Pages at
    <https://spoxplors.github.io/odin-device-ordering-prototype/> so the link can
    be shared with colleagues. Read *Publishing* below before pushing anything.
@@ -51,6 +52,12 @@ has asked for it; it would be real work.
 
 Most recent round of changes, in order:
 
+- **The starter page is now the opportunity statement.** The three phase
+  cards and their three *Open Phase N* buttons are gone; in their place are
+  the user's own copy — problem context, impact, desired outcome, the plan by
+  phase and the PRD dates — and a single **Start Prototype** button near the
+  top that always opens Phase 1. **The copy is internal and the site is
+  public: see the warning in *Publishing*.**
 - **The prototype sells into two regions now, and they do not overlap.** A
   **Region** dropdown in the prototype settings bar switches between the
   **United States** and **Canada**. The United States keeps the two Verifone
@@ -152,7 +159,7 @@ No build step, no dependencies.
 
 | | |
 |---|---|
-| `index.html` | Starter page — the three phases and the way into each. `css/prototype-start.css` |
+| `index.html` | Starter page — the opportunity statement and the one way in. `css/prototype-start.css` |
 | `devices.html` | Devices list (Odin green). `css/styles.css`, `js/app.js`, `js/data.js`, plus the ordering state module for the prototype bar |
 | `js/shell.js` | The Odin app bar and sidebar, shared by all six pages; also the sidebar's collapse toggle |
 | `order.html` | Catalogue — device cards. No filters, no *Deliver to* |
@@ -176,8 +183,9 @@ the prototype rather than a screen inside Odin, so it draws no app bar or
 sidebar, loads no `css/styles.css` and runs no JavaScript — `.atlas` is the
 whole page there, which is why `css/prototype-start.css` gives it the page
 background and min-height that `css/order.css` deliberately withholds. Its
-phase contents are a reading of `user-flows/flow.md`; if that spec moves, the
-page does not follow on its own.
+copy is the user's opportunity statement, pasted in and formatted, not a
+reading of `user-flows/flow.md`; neither follows the other, so a change to
+one leaves the other stale.
 
 Every other page follows the same shape: `renderShell(activeKey)` writes the Odin app
 bar and sidebar and returns `<main class="content">`, then the page moves its
@@ -217,6 +225,19 @@ git add -A && git commit -m "…" && git push
 is indexable; there is no internal-only setting, and a free account cannot
 serve Pages from a private repo at all. The user was told this and chose public
 with the sensitive material withheld. So, before every push:
+
+> **⚠ `index.html` has not cleared this bar.** The starter page now carries
+> the opportunity statement as the user supplied it, and three things in it
+> are internal: the **named PM and PD** (colleagues, which is personal data), a
+> **link to an internal Jira board** on `clubessentialholdings.atlassian.net`,
+> and the **roadmap itself** — dated commitments, named business units,
+> partners and acquirers, and GA targets. The rules below say none of that
+> should go onto a public site. The page was written as asked and the risk was
+> put to the user; **whoever pushes it next must check that the user has
+> decided**, rather than assuming the copy was cleared because it is in the
+> file. The cheap fix, if it has not been: drop the owner line and the Jira
+> link, and keep the rest behind the button rather than on the landing page.
+> `git log` for the commit that added it will say what was decided.
 
 - **No Figma file keys, library keys or internal URLs.** The three Figma
   identifiers were redacted out of this file and out of the header comment in
@@ -305,6 +326,18 @@ anything already crawled may persist in caches for a while.
   Odin's rule leaking into an Atlas component, here it is an Atlas rule put on
   an image deliberately. If a cut-out render of either device turns up, drop
   the flag rather than keeping the blend.
+- **The starter page is the opportunity statement, with one way in.** The
+  user supplied the copy — problem context, impact, desired outcome, the plan
+  by phase, PRD dates — and asked for it formatted clearly with a single
+  **Start Prototype** button near the top that **always opens Phase 1**,
+  whatever was last used; the prototype bar takes over from there. That
+  replaced three phase cards with their own *Open Phase 1 / 2 / 3* buttons, so
+  Phase 2 no longer has a way in from this page and the `.phase*` rules in
+  `css/prototype-start.css` went with the markup. The *DRAFT v2* pill is
+  `badge--warning` rather than `badge--neutral`: the page background is
+  `surface-sunken` (#fafafc) and the neutral badge is `info-subtle` (#f4f4f7),
+  so a neutral pill is invisible there. **The copy is internal — see the
+  warning in *Publishing*.**
 - **`index.html` is the starter page; `devices.html` is the Devices list.**
   They were the other way round until publication: Pages serves `index.html` at
   the site root and the user picked the starter page as the landing page.
@@ -805,8 +838,11 @@ And as before:
 - *Device list* is highlighted across the ordering flow and *Orders* on the
   orders and summary pages
 - no page draws a flow bar, and the order summary's head is the title alone
-- `index.html`'s one live button opens `devices.html`, its Phase 2 and
-  3 buttons are disabled, and no Odin green appears on the page itself
+- `index.html`'s one button reads *Start Prototype*, opens
+  `devices.html?phase=1` whatever phase was last used, and no Odin green
+  appears on the page itself. At phone width the meta line under the statement
+  stacks and its separators disappear, rather than wrapping them to the start
+  of a row
 - the device detail page carries the catalogue's head: *Order Devices*, the
   cart button with a live count, and *Back* above it — and the page still has
   exactly one `h1`
